@@ -1,7 +1,7 @@
 #ifndef BMP_FACTORY_DELEGATE_H_
 #define BMP_FACTORY_DELEGATE_H_
 
-#include "../ddjvu/IBmpFactory.h"
+#include "ddjvu/IBmpFactory.h"
 #include "bmp_delegate.h"
 
 class BmpFactoryDelegate: public ddjvu::IBmpFactory<pp::ImageData> {

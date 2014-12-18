@@ -1,7 +1,7 @@
 #ifndef BMP_DELEGATE_H_
 #define BMP_DELEGATE_H_
 
-#include "../ddjvu/IBmp.h"
+#include "ddjvu/IBmp.h"
 
 #include "ppapi/cpp/instance.h"
 #include "ppapi/cpp/image_data.h"
