@@ -2,7 +2,7 @@
 #define DJVU_DECODER_H_
 
 #include "ddjvu/File.h"
-#include "loader/url_download_stream.h"
+#include "../loader/url_download_stream.h"
 #include "bmp_factory_delegate.h"
 
 class DjVuDecoder {
