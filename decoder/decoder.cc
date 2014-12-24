@@ -1,6 +1,10 @@
 #include "decoder.h"
 
 #include "ppapi/cpp/var.h"
+#include "ppapi/cpp/var_array.h"
+#include "ppapi/cpp/var_dictionary.h"
+
+#include "../helpers/message_helper.h"
 
 DjVuDecoder::DjVuDecoder(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream)
 	: stream_(stream)
@@ -16,8 +20,7 @@ DjVuDecoder::~DjVuDecoder() {
 		decodeThread_.join();
 }
 
- void DjVuDecoder::start(pp::Size size) {
-	size_ = size;
+ void DjVuDecoder::start() {
 	decodeThread_ = std::thread(&DjVuDecoder::decodeThreadFuntion_, this);
 }
 
@@ -46,12 +49,55 @@ void DjVuDecoder::decodeThreadFuntion_() {
 
 	int nPages = document_->getPageNum();
 
-	if (nPages > 0) {
-		bmp_ = document_->getPageBitmap(0, size_.width(), size_.height(), true);
+	pp::VarArray pageArray;
+	pageArray.SetLength(nPages);
+	//array.Set(0, x_angle_);
+	//array.Set(1, y_angle_);
+	//PostMessage(array);
+	for (int pageNum = 0; pageNum < nPages; pageNum++){
+		ddjvu_pageinfo_t pageInfo =  document_->getPageInfo(pageNum);
+
+		// Send page as array
+		/* 
+		pp::VarArray page;
+		
+		page.SetLength(3);
+		page.Set(0, pp::Var(pageInfo.width));
+		page.Set(1, pp::Var(pageInfo.height));
+		page.Set(2, pp::Var(pageInfo.dpi));
+
+		pageArray.Set(pageNum, page);
+		*/
+
+		// Send page as dictionary
+		pp::VarDictionary page;
+
+		page.Set("width", pageInfo.width);
+		page.Set("height", pageInfo.height);
+		page.Set("dpi", pageInfo.dpi);
+
+		pageArray.Set(pageNum, page);
+
+
+		/*
+		Page p;
+		p.w = pageInfo.width;
+		p.h = pageInfo.height;
+		p.w_screen = MulDiv(p.w, dpiX, pageInfo.dpi);
+		p.h_screen = MulDiv(p.h, dpiY, pageInfo.dpi);
+		pages_.push_back(p);
+		if (p.w_screen > pageWidth_)
+		pageWidth_ = p.w_screen;
+		if (p.h_screen > pageHeight_)
+		pageHeight_ = p.h_screen;
+		*/
 	}
 
-	pp::Var var_reply(error_);
-	instance_->PostMessage(var_reply);
+	PostObjectMessage(instance_, "browser", "pages", pageArray);
+	return;
+
+	//pp::Var var_reply(error_);
+	//instance_->PostMessage(var_reply);
 
 	//updateThread_ = std::thread(&PluginWindow::updateThreadFuntion_, this);
 }

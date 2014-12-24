@@ -10,7 +10,7 @@ public:
 	DjVuDecoder(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream);
 	~DjVuDecoder();
 
-	void start(pp::Size size);
+	void start();
 	std::shared_ptr<ddjvu::IBmp<pp::ImageData>> getBmp();
 private:
 	void decodeThreadFuntion_();
@@ -23,7 +23,6 @@ private:
 	pp::Instance* instance_;  // Weak pointer.
 	std::shared_ptr<ddjvu::IBmp<pp::ImageData>> bmp_;
 	std::string error_;
-	pp::Size size_;
 
 	std::thread decodeThread_;
 	std::thread updateThread_;

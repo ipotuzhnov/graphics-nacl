@@ -11,6 +11,7 @@
 #include "ppapi/cpp/instance.h"
 #include "ppapi/cpp/url_loader.h"
 #include "ppapi/cpp/url_request_info.h"
+#include "ppapi/cpp/url_response_info.h"
 #include "ppapi/utility/completion_callback_factory.h"
 #include "url_download_stream.h"
 
@@ -84,6 +85,9 @@ private:
 	std::string url_response_body_;  // Contains accumulated downloaded data.
 	pp::CompletionCallbackFactory<URLLoaderHandler> cc_factory_;
 
+	int download_progress_;
+	int64_t bytes_received_;
+	int64_t total_bytes_to_be_received_;
 	std::shared_ptr<UrlDownloadStream> stream_;
 
 	URLLoaderHandler(const URLLoaderHandler&);
