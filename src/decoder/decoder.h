@@ -4,6 +4,7 @@
 #include "ppapi/cpp/var.h"
 #include "ppapi/cpp/var_array.h"
 #include "ppapi/cpp/var_dictionary.h"
+#include "ppapi/cpp/var_array_buffer.h"
 
 #include "ddjvu/File.h"
 

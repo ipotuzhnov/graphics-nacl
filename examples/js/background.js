@@ -133,6 +133,7 @@ var graphics = ( function() {
         var page = {top: 0, bottom: 0};
         var pageOffset = margin;
         var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) + 100};
+        //var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) - 500};
         //console.log(screen);
         for (var pageNum = 0; pageNum < common.pages.length; pageNum++) {
           page.top = pageOffset;

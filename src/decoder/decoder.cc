@@ -31,6 +31,10 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, int width, in
 	//if ( pages_[pageId].first ) {
 	if (pages_.find(pageId) != pages_.end()) {
 		//PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", 0));
+		auto first = pages_.find(pageId)->second.first;
+		pp::VarDictionary asdict = first->getBmp()->getAsDictionary();
+		Bitmap asbmp(asdict);
+		PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", asdict));
 		return;
 	}
 	if ( ! pages_[pageId].second.joinable() )
@@ -94,9 +98,13 @@ void DjVuDecoder::decodeThreadFuntion_() {
 
 void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum, int width, int height) {
 	auto first = document_->getPageBitmap(pageNum, width, height, true);
-	pages_[pageId].first = first;
-	int y = 2;
-	PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", 0));
+	//pages_[pageId].first = first;
+	pp::VarDictionary asdict = first->getBmp()->getAsDictionary();
+	Bitmap asbmp(asdict);
+	PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", asdict));
+	// @TODO (ilia) unmap
+	//pageData.Unmap();
+
 	//pages_[pageId].first = document_->getPageBitmap(pageNum, width, height, true);
 }
 

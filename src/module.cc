@@ -96,6 +96,8 @@ private:
 	std::shared_ptr<DjVuDecoder> decoder_;
 	plugin_type type_;
 
+	pp::VarDictionary imageAsDictionary;
+
 	// Arguments
 	std::map<std::string, std::string> args_;
 
@@ -224,17 +226,33 @@ private:
 				if (args == "finished") {
 					PageRender();
 				} else if (args == "update") {
+					//PageRender();
+				}
+			} else if (name == "decoded") {
+				if (args.is_dictionary()) {
+					imageAsDictionary = args;
 					PageRender();
+				} else {
+					PostErrorMessage(this, "Args is not an array buffer"); 
 				}
 			}
 		}
 	}
 
 	void PageRender() {
-		//auto decoder = decoder_;
-		//auto id = args_["id"];
-		//auto getpagebmp = decoder_->getPageBmp(id);
-		
+		if ( imageAsDictionary.is_null() )
+			return;
+		if ( ! imageAsDictionary.is_dictionary() ) 
+			return;
+		Bitmap bmp(imageAsDictionary);
+		pp::ImageData image = bmp.getAsImageData(this);
+		context_.ReplaceContents(&image);
+		pp::CompletionCallback cc(FlushCallback, this);
+		context_.Flush(cc);
+		return;
+
+		// OLD STYLE (only works with shared memory)
+		/*
 		if (decoder_->getPageBmp(args_["id"]) == nullptr) 
 			return;
 
@@ -245,6 +263,7 @@ private:
 		pp::CompletionCallback cc(FlushCallback, this);
 		int32_t error = context_.Flush(cc);
 		int y = 2;
+		*/
 	}
 
 public:
@@ -405,8 +424,8 @@ public:
 
 	// On view changed event
 	virtual void DidChangeView(const pp::View& view) {
-		auto decoder = decoder_;
-		auto id = args_["id"];
+		//auto decoder = decoder_;
+		//auto id = args_["id"];
 		//auto getpagebmp = decoder_->getPageBmp(id);
 		//auto getbmp = getpagebmp->getBmp();
 

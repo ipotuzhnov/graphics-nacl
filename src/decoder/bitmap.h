@@ -33,8 +33,46 @@ public:
 		memcpy(imageBuffer_, imageBuffer, rowSize * height);
 	}
 
+	Bitmap(pp::VarDictionary bmp) {
+		bitsPixel_ = bmp.Get("bitsPixel").AsInt();
+		colors_ = bmp.Get("colors").AsInt();
+		width_ = bmp.Get("width").AsInt();
+		height_ = bmp.Get("height").AsInt();
+		rowSize_ = bmp.Get("rowSize").AsInt();
+		pp::VarArrayBuffer pageImageData(bmp.Get("imageData"));
+		char *buffer = static_cast<char*>(pageImageData.Map());
+		int size = pageImageData.ByteLength();
+		imageBuffer_ = new char[size];
+		memcpy(imageBuffer_, buffer, size);		
+		pageImageData.Unmap();
+	}
+
 	~Bitmap() {
 		delete [] imageBuffer_;
+	}
+
+	char *getImageBuffer() {
+		return imageBuffer_;
+	}
+
+	int getImageBufferSize() {
+		return rowSize_ * height_;
+	}
+
+	pp::VarDictionary getAsDictionary() {
+		pp::VarDictionary bmp;
+		bmp.Set("bitsPixel", bitsPixel_);
+		bmp.Set("colors", colors_);
+		bmp.Set("width", width_);
+		bmp.Set("height", height_);
+		bmp.Set("rowSize", rowSize_);
+		int size = rowSize_ * height_;
+		pp::VarArrayBuffer pageImageData(size);
+		char *buffer = static_cast<char*>(pageImageData.Map());
+		memcpy(buffer, imageBuffer_, size);
+		bmp.Set("imageData", pageImageData);
+		pageImageData.Unmap();
+		return bmp;
 	}
 
 	pp::ImageData getAsImageData(pp::Instance *instance) {

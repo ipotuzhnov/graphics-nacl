@@ -1,7 +1,7 @@
 function loadSettings(path) {
-  settings.setMimeType('pnacl');
+  settings.setMimeType('ppapi');
   if (path == null) {
-    settings.setDocumentPath('http://172.16.2.94:88/graphics_nacl/1.djvu');
+    settings.setDocumentPath('http://localhost/docs/1.djvu');
   } else {
     settings.setDocumentPath(path)
   }

@@ -416,7 +416,8 @@ var common = (function() {
             console.log('Page ' + message.target + ' decoded');
             var pageId = message.target;
             var pageEl = document.getElementById(pageId);
-            var message = { target: pageId, type: 'notify', name: 'decode', args: 'finished' };
+            var message = { target: pageId, type: 'notify', name: 'decoded', args: message.args };
+            console.log(message);
             pageEl.postMessage(message);
           }
         }
@@ -519,7 +520,7 @@ var common = (function() {
 // the page's document has finished.
 document.addEventListener('DOMContentLoaded', function() {
   //loadSettings('ppapi', 'http://localhost/docs/1.djvu');
-  loadSettings('pnacl', 'http://172.16.2.94:88/graphics_nacl/1.djvu');
+  loadSettings();
 
   var body = document.body;
 
