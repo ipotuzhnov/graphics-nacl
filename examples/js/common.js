@@ -151,6 +151,7 @@ var common = (function() {
     moduleEl.setAttribute('height', height);
     moduleEl.setAttribute('plugin_type', 'page');
     moduleEl.setAttribute('page_num', pageNum);
+    moduleEl.setAttribute('onload', 'graphics.view.pageDidLoad("' + pageId + '");');
     //moduleEl.setAttribute('src', path + '/' + name + '.nmf');
 
     var mimetype = settings.mimetype;
@@ -237,6 +238,7 @@ var common = (function() {
    */
   function moduleDidLoad() {
     //common.naclModule = document.getElementById('nacl_module');
+    console.log('load event');
     if (common.decoder === null) {
       common.decoder = document.getElementById('decoder');
       var message = { target: 'decoder', type: 'command', name: 'download', args: 'start' };
@@ -394,6 +396,16 @@ var common = (function() {
           if (message.name === 'pages') {
             common.pages = message.args;
             onDocumentDecodeed(common.pages);
+          }
+        }
+      } else {
+        if (message.type === 'notify') {
+          if (message.name === 'decoded') {
+            console.log('Page ' + message.target + ' decoded');
+            var pageId = message.target;
+            var pageEl = document.getElementById(pageId);
+            var message = { target: pageId, type: 'notify', name: 'decode', args: 'finished' };
+            pageEl.postMessage(message);
           }
         }
       }

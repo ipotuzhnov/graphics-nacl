@@ -36,29 +36,10 @@ namespace {
 	// Plugin errors
 	const char* const kErrorUnknownType = "browser:error:unknown type";
 
+	// @TODO (ilia)
 	// Message format <target>:<message_type>:<command>:<args>
 	// Instead of string messages we'll use Arrays or Dictionaries
 	// So new message format is Dictionary { target: <target>, type: <message_type>, name: <command, event or object_name>, args: <string, array or dictionary> } 
-
-	// ============================================================================================================
-	// plugin_type::decoder messages
-	// ============================================================================================================
-	// Income
-	const char* const kDecoderCommandDownloadStart = "decoder:command:download:start";
-	const char* const kDecoderCommandDecodeStart = "decoder:command:decode:start";
-	const char* const kDecoderCommandRenderStart = "decoder:command:render:<int: pageNum, int: width, int: height>";
-	// Outcome
-	const char* const kBrowserNotifyDownlaodProgress = "browser:notify:download:<int: progress>";
-	const char* const kBrowserNotifyDownlaodFinished = "browser:notify:download:finished";
-	const char* const kPageNotifyPageRendered = "page:notify:rendered:page<int: pageNum, int: width, int: height>";
-
-	// ============================================================================================================
-	// plugin_type::page messages
-	// ============================================================================================================
-	// Income
-	const char* const kPageCommandRenderStart = "page:command:render:start";
-	// Outcome
-	const char* const kDecoderNotifyRender = "decoder:commad:render:<int: pageNum, int: width, int: height>";
 
 	// @TODO (ilia) delete this trash later
 	const char* const kReplyString = "hello from NaCl!";
@@ -152,11 +133,33 @@ private:
 	}
 
 	static void FlushCallback(void* instance, int32_t result) {
+		GraphicsInstance* instance_ = static_cast<GraphicsInstance*>(instance); 
+		if (result == PP_ERROR_BADRESOURCE)
+			instance_->Update();
 		// Here we can get instance
 		// GraphicsInstance* instance1 = static_cast<GraphicsInstance*>(instance); 
 	}
 
+	// Check message
+	bool IsMessageValid(pp::VarDictionary message) {
+		if (message.Get("target").is_null()) {
+			PostErrorMessage(this, "Message target is undefiend", 0, message);
+			return false;
+		}
+		if (message.Get("type").is_null()) {
+			PostErrorMessage(this, "Message type is undefiend", 0, message);
+			return false;
+		}
+		if (message.Get("name").is_null()) {
+			PostErrorMessage(this, "Message command name is undefiend", 0, message);
+			return false;
+		}
+		return true;
+	}
+
 	// Handle different types of messages
+
+	// Decoder messages
 
 	void HandleDecoderMessage(pp::Var target, pp::Var message_type, pp::Var name, pp::Var args) {
 		if (message_type == "command") {
@@ -167,6 +170,8 @@ private:
 			} else if (name == "decode") {
 				if (args == "start") {
 					DecoderDecodeStart();
+				} else if (args.is_dictionary()) {
+					DecoderDecodePage(pp::VarDictionary(args));
 				}
 			}
 		}
@@ -199,13 +204,53 @@ private:
 
 	void DecoderDecodeStart() {
 		if (!decoder_)
-			decoder_ = std::make_shared<DjVuDecoder>(this, stream_);
-		decoder_->start();
+			return; // @TODO (ilia) return erorr here
+		decoder_->startDocumentDecode(this, stream_);
+	}
+
+	void DecoderDecodePage(pp::VarDictionary page) {
+		
+
+		if (!decoder_)
+			return; // @TODO (ilia) return erorr here
+		decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), page.Get("width").AsInt(), page.Get("height").AsInt());
+	}
+
+	// Page messages
+
+	void HandlePageMessage(pp::Var target, pp::Var message_type, pp::Var name, pp::Var args) {
+		if (message_type == "notify") {
+			if (name == "decode") {
+				if (args == "finished") {
+					PageRender();
+				} else if (args == "update") {
+					PageRender();
+				}
+			}
+		}
+	}
+
+	void PageRender() {
+		//auto decoder = decoder_;
+		//auto id = args_["id"];
+		//auto getpagebmp = decoder_->getPageBmp(id);
+		
+		if (decoder_->getPageBmp(args_["id"]) == nullptr) 
+			return;
+
+		auto getbmp = decoder_->getPageBmp(args_["id"])->getBmp();
+		pp::ImageData image = decoder_->getPageBmp(args_["id"])->getBmp()->getAsImageData(this);
+
+		context_.ReplaceContents(&image);
+		pp::CompletionCallback cc(FlushCallback, this);
+		int32_t error = context_.Flush(cc);
+		int y = 2;
 	}
 
 public:
-	explicit GraphicsInstance(PP_Instance instance)
+	explicit GraphicsInstance(PP_Instance instance, std::shared_ptr<DjVuDecoder> decoder)
 		: pp::Instance(instance),
+		decoder_(decoder),
 		type_(plugin_type::unknown),
 		color_(kDefaultColor), 
 		size_(0, 0) {}
@@ -214,6 +259,10 @@ public:
 		ParseArgs(argc, argn, argv);
 		CheckType();
 		return true;
+	}
+
+	void Update() {
+		PageRender();
 	}
 
 	// Handle message from JavaScript
@@ -236,37 +285,24 @@ public:
 		}
 
 		pp::VarDictionary dictionary_message(var_message);
+		// @TODO (ilia) create appropriative error later
+		if ( ! IsMessageValid(dictionary_message) )
+			return;
 
 		// Handle decoder messages
 		if (type_ == plugin_type::decoder) {
-			// @TODO (ilia) create appropriative error later
-			if (dictionary_message.Get("target").is_null()) {
-				pp::Var var_reply("Message target is undefiend");
-				PostMessage(var_reply);
-				return;
-			}
-			if (dictionary_message.Get("type").is_null()) {
-				pp::Var var_reply("Message type is undefiend");
-				PostMessage(var_reply);
-				return;
-			}
-			if (dictionary_message.Get("name").is_null()) {
-				pp::Var var_reply("Message command name is undefiend");
-				PostMessage(var_reply);
-				return;
-			}
-
 			HandleDecoderMessage(dictionary_message.Get("target"), dictionary_message.Get("type"), dictionary_message.Get("name"), dictionary_message.Get("args"));
 			return;
-			//std::string target = message.substr(0, message.substr(0
 		}
 
-		struct ArrayMessage {
-			std::string target;
-			std::string message_type;
-			std::string command;
-			std::vector<std::string> args;
-		};
+		if (type_ == plugin_type::page) {
+			HandlePageMessage(dictionary_message.Get("target"), dictionary_message.Get("type"), dictionary_message.Get("name"), dictionary_message.Get("args"));
+			return;
+			// @TODO (ilia) create appropriative error later
+		}
+
+		return;
+
 		struct VarMessage {
 			pp::Var target;
 			pp::Var message_type;
@@ -350,17 +386,16 @@ public:
 				handler->Start();
 			}
 		} else if (message == kDownloadOk) {
-			// Start decoding
-			if (!decoder_)
-				decoder_ = std::make_shared<DjVuDecoder>(this, stream_);
-			decoder_->start();
+			
 		} else if (message == kDjVuOk) {
 			// Redraw
 			if (decoder_) {
+				/*
 				pp::ImageData image = *decoder_->getBmp()->getBmp();
 				context_.ReplaceContents(&image);
 				pp::CompletionCallback cc(FlushCallback, this);
 				context_.Flush(cc);
+				*/
 			}
 		} else {
 			pp::Var var_reply(kReplyString);
@@ -370,6 +405,20 @@ public:
 
 	// On view changed event
 	virtual void DidChangeView(const pp::View& view) {
+		auto decoder = decoder_;
+		auto id = args_["id"];
+		//auto getpagebmp = decoder_->getPageBmp(id);
+		//auto getbmp = getpagebmp->getBmp();
+
+		/*
+		if (decoder_) {
+			if (decoder_->getPageBmp(args_["id"]) != nullptr) {
+				//PageRender();
+				return;
+			}
+		}
+		*/
+
 		pp::Size new_size = view.GetRect().size();
 
 		if (new_size.width() == size_.width() &&
@@ -399,12 +448,14 @@ public:
 };
 
 class GraphicsModule : public pp::Module {
+private:
+	std::shared_ptr<DjVuDecoder> decoder_; // Shared object for decoding managment and page storage
 public:
-	GraphicsModule() : pp::Module() {}
+	GraphicsModule() : pp::Module() { decoder_ = std::make_shared<DjVuDecoder>(); }
 	virtual ~GraphicsModule() {}
 
 	virtual pp::Instance* CreateInstance(PP_Instance instance) {
-		return new GraphicsInstance(instance);
+		return new GraphicsInstance(instance, decoder_);
 	}
 };
 

@@ -115,9 +115,14 @@ function onDocumentDecodeed(pages) {
 
 var graphics = ( function() {
   var view = ( function() {
+    function pageDidLoad(pageId) {
+      var message = { target: pageId + 'nacl', type: 'notify', name: 'decode', args: 'update' };
+      graphics.pages[pageId].module.postMessage(message);
+    }
+  
     function viewDidScroll() {
       if (graphics.view.element !== null) {
-        console.log('view did scroll: ' + graphics.view.element.scrollTop);
+        //console.log('view did scroll: ' + graphics.view.element.scrollTop);
         var offset = graphics.view.element.scrollTop;
         
         // Update page visibility
@@ -141,6 +146,12 @@ var graphics = ( function() {
               graphics.pages[pageId].module = document.getElementById(pageId + 'nacl');
               console.log('Create new nacl: ' + pageId + 'nacl');
               console.log(page);
+              var pageIdNaCl = pageId + 'nacl';
+              var pageWidth = Math.floor(common.pages[pageNum].width * scale);
+              var pageHeight = Math.floor(common.pages[pageNum].height * scale);
+              var args = { pageId: pageIdNaCl, pageNum: pageNum, width: pageWidth, height: pageHeight };
+              var message = { target: 'decoder', type: 'command', name: 'decode', args: args };
+              common.decoder.postMessage(message);
             }
           // If page is not on screen then remode NaCl module element
           } else if (graphics.pages[pageId].module !== null) {
@@ -158,7 +169,8 @@ var graphics = ( function() {
     // The symbols to export.
     return {
       element: null,
-      viewDidScroll: viewDidScroll
+      viewDidScroll: viewDidScroll,
+      pageDidLoad: pageDidLoad
     }
   } ());
   

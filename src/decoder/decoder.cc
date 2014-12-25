@@ -1,31 +1,50 @@
 #include "decoder.h"
 
-#include "ppapi/cpp/var.h"
-#include "ppapi/cpp/var_array.h"
-#include "ppapi/cpp/var_dictionary.h"
-
 #include "../helpers/message_helper.h"
 
-DjVuDecoder::DjVuDecoder(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream)
-	: stream_(stream)
-	, delegateBmpFactory_(std::make_shared<BmpFactoryDelegate>(instance))
-	, error_("djvu:Ok")
-	, instance_(instance) {
+DjVuDecoder::DjVuDecoder()
+	: error_("djvu:Ok") {
 }
 
 DjVuDecoder::~DjVuDecoder() {
+	for (auto it = pages_.begin(); it != pages_.begin(); ++it) {
+		if (it->second.second.joinable())
+			it->second.second.join();
+	}
+	/*
 	if (updateThread_.joinable())
 		updateThread_.join();
+	*/
 	if (decodeThread_.joinable())
 		decodeThread_.join();
 }
 
- void DjVuDecoder::start() {
+void DjVuDecoder::startDocumentDecode(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream) {
+	stream_ = stream;
+	instance_ = instance;
+	delegateBmpFactory_ = std::make_shared<BmpFactoryDelegate>(instance);
+
 	decodeThread_ = std::thread(&DjVuDecoder::decodeThreadFuntion_, this);
 }
 
-std::shared_ptr<ddjvu::IBmp<pp::ImageData>> DjVuDecoder::getBmp() {
-	return bmp_;
+void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, int width, int height) {
+	//if ( pages_[pageId].first ) {
+	if (pages_.find(pageId) != pages_.end()) {
+		//PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", 0));
+		return;
+	}
+	if ( ! pages_[pageId].second.joinable() )
+		pages_[pageId].second = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, width, height);
+}
+
+std::shared_ptr<ddjvu::IBmp<Bitmap>> DjVuDecoder::getPageBmp(std::string pageId) {
+	//auto first = pages_[pageId].first;
+	
+	if (pages_.find(pageId) != pages_.end()) {
+		return pages_[pageId].first;
+	} else {
+		return nullptr;
+	} 
 }
 
 void DjVuDecoder::decodeThreadFuntion_() {
@@ -35,8 +54,7 @@ void DjVuDecoder::decodeThreadFuntion_() {
 			return;
 		}
 
-		document_ = std::shared_ptr<ddjvu::File<pp::ImageData>>(new ddjvu::File<pp::ImageData>(stream_->getPool(), delegateBmpFactory_));
-
+		document_ = std::shared_ptr<ddjvu::File<Bitmap>>(new ddjvu::File<Bitmap>(stream_->getPool(), delegateBmpFactory_));
 
 		if (!document_->isDocumentValid()) {
 			error_ = "djvu:Error";
@@ -51,23 +69,9 @@ void DjVuDecoder::decodeThreadFuntion_() {
 
 	pp::VarArray pageArray;
 	pageArray.SetLength(nPages);
-	//array.Set(0, x_angle_);
-	//array.Set(1, y_angle_);
-	//PostMessage(array);
+
 	for (int pageNum = 0; pageNum < nPages; pageNum++){
 		ddjvu_pageinfo_t pageInfo =  document_->getPageInfo(pageNum);
-
-		// Send page as array
-		/* 
-		pp::VarArray page;
-		
-		page.SetLength(3);
-		page.Set(0, pp::Var(pageInfo.width));
-		page.Set(1, pp::Var(pageInfo.height));
-		page.Set(2, pp::Var(pageInfo.dpi));
-
-		pageArray.Set(pageNum, page);
-		*/
 
 		// Send page as dictionary
 		pp::VarDictionary page;
@@ -77,20 +81,6 @@ void DjVuDecoder::decodeThreadFuntion_() {
 		page.Set("dpi", pageInfo.dpi);
 
 		pageArray.Set(pageNum, page);
-
-
-		/*
-		Page p;
-		p.w = pageInfo.width;
-		p.h = pageInfo.height;
-		p.w_screen = MulDiv(p.w, dpiX, pageInfo.dpi);
-		p.h_screen = MulDiv(p.h, dpiY, pageInfo.dpi);
-		pages_.push_back(p);
-		if (p.w_screen > pageWidth_)
-		pageWidth_ = p.w_screen;
-		if (p.h_screen > pageHeight_)
-		pageHeight_ = p.h_screen;
-		*/
 	}
 
 	PostObjectMessage(instance_, "browser", "pages", pageArray);
@@ -102,24 +92,32 @@ void DjVuDecoder::decodeThreadFuntion_() {
 	//updateThread_ = std::thread(&PluginWindow::updateThreadFuntion_, this);
 }
 
+void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum, int width, int height) {
+	auto first = document_->getPageBitmap(pageNum, width, height, true);
+	pages_[pageId].first = first;
+	int y = 2;
+	PostMessageToInstance(instance_, CreateDictionaryReply(pageId, "notify", "decoded", 0));
+	//pages_[pageId].first = document_->getPageBitmap(pageNum, width, height, true);
+}
+
+/*
 void DjVuDecoder::updateThreadFuntion_() {
-	/*
 	auto windowNotifier = document_->getWindowNotifier();
 
 	while (!windowNotifier->check(ddjvu::message_window::CLOSE)) {
-		windowNotifier->wait();
-		if (windowNotifier->check(ddjvu::message_window::UPDATE) && !windowNotifier->check(ddjvu::message_window::CLOSE)) {
-			auto views = document_->getRenderedViews();
-			auto it = unique (views.begin(), views.end());
-			views.resize( distance(views.begin(),it) );
-			for (auto it = views.begin(); it != views.end(); ++it) {
-				if ((*it ) == PW_MAIN_VIEW)
-					updateMainView_();
-				if ((*it) == PW_PREVIEW_VIEW)
-					updatePreviewView_();
-			}
-			windowNotifier->reset(ddjvu::message_window::UPDATE);
-		}
+	windowNotifier->wait();
+	if (windowNotifier->check(ddjvu::message_window::UPDATE) && !windowNotifier->check(ddjvu::message_window::CLOSE)) {
+	auto views = document_->getRenderedViews();
+	auto it = unique (views.begin(), views.end());
+	views.resize( distance(views.begin(),it) );
+	for (auto it = views.begin(); it != views.end(); ++it) {
+	if ((*it ) == PW_MAIN_VIEW)
+	updateMainView_();
+	if ((*it) == PW_PREVIEW_VIEW)
+	updatePreviewView_();
 	}
-	*/
+	windowNotifier->reset(ddjvu::message_window::UPDATE);
+	}
+	}
 }
+*/
