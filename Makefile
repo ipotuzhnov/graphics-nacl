@@ -10,7 +10,7 @@ LIBS=-l ppapi_cpp -l ppapi -l pthread -l djvulibre
 
 CXXCPP=-D THREADMODEL=POSIXTHREADS -D HAVE_STDINT_H -D UPDATE_EXPORTS -D HAVE_NAMESPACES -D AUTOCONF -D HAVE_STDINCLUDES
 
-SOURCES=module.cc loader/url_download_stream.cc loader/url_loader_handler.cc decoder/decoder.cc
+SOURCES=src/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc
 
 all: final
 

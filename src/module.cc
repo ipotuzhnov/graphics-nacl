@@ -108,7 +108,7 @@ private:
 	}
 
 	bool ParseMessage(std::string message) {
-		 
+		 return true;
 	}
 
 	void CheckType() {
