@@ -103,9 +103,12 @@ var common = (function() {
     moduleEl.setAttribute('height', 0);
     moduleEl.setAttribute('plugin_type', 'decoder');
     moduleEl.setAttribute('docsrc', settings.document.path);
-    //moduleEl.setAttribute('src', path + '/' + name + '.nmf');
+    if (settings.type == 'pnacl') {
+      moduleEl.setAttribute('src', settings.nmf);
+    }
 
-    moduleEl.setAttribute('type', 'application/x-ppapi');
+    var mimetype = settings.mimetype;
+    moduleEl.setAttribute('type', mimetype);
 
     // The <EMBED> element is wrapped inside a <DIV>, which has both a 'load'
     // and a 'message' event listener attached.  This wrapping method is used
@@ -152,7 +155,9 @@ var common = (function() {
     moduleEl.setAttribute('plugin_type', 'page');
     moduleEl.setAttribute('page_num', pageNum);
     moduleEl.setAttribute('onload', 'graphics.view.pageDidLoad("' + pageId + '");');
-    //moduleEl.setAttribute('src', path + '/' + name + '.nmf');
+    if (settings.type == 'pnacl') {
+      moduleEl.setAttribute('src', settings.nmf);
+    }
 
     var mimetype = settings.mimetype;
     moduleEl.setAttribute('type', mimetype);
@@ -238,12 +243,14 @@ var common = (function() {
    */
   function moduleDidLoad() {
     //common.naclModule = document.getElementById('nacl_module');
-    console.log('load event');
+    //console.log('load event');
     if (common.decoder === null) {
       common.decoder = document.getElementById('decoder');
       var message = { target: 'decoder', type: 'command', name: 'download', args: 'start' };
       common.decoder.postMessage(message);
       updateStatus('DOWNLOADING:0%');
+    } else {
+      //console.log('decoder === null');
     }
     //updateStatus('RUNNING');
     
@@ -370,6 +377,11 @@ var common = (function() {
       */
     } else if (typeof message_event.data === 'object') {
       var message = message_event.data;
+
+      if (message.name === 'error') {
+        console.log('ERROR');
+      }
+
       if (message.target === 'browser') {
         // Handle notifications
         if (message.type === 'notify') {
@@ -506,7 +518,8 @@ var common = (function() {
 // Listen for the DOM content to be loaded. This event is fired when parsing of
 // the page's document has finished.
 document.addEventListener('DOMContentLoaded', function() {
-  loadSettings('ppapi', 'http://localhost/docs/1.djvu');
+  //loadSettings('ppapi', 'http://localhost/docs/1.djvu');
+  loadSettings('pnacl', 'http://172.16.2.94:88/graphics_nacl/1.djvu');
 
   var body = document.body;
 
