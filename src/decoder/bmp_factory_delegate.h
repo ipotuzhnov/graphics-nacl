@@ -4,7 +4,7 @@
 #include "ddjvu/IBmpFactory.h"
 #include "bmp_delegate.h"
 
-class BmpFactoryDelegate: public ddjvu::IBmpFactory<Bitmap> {
+class BmpFactoryDelegate: public ddjvu::IBmpFactory<renderer::Bitmap> {
 private:
 	pp::Instance* instance_;  // Weak pointer.
 public:
@@ -12,7 +12,7 @@ public:
 		instance_ = instance;
 	}
 
-	std::shared_ptr<ddjvu::IBmp<Bitmap>> createBmp(int bitsPixel, int colors, int width, int height, int rowSize, char * imageBuffer) {
+	std::shared_ptr<ddjvu::IBmp<renderer::Bitmap>> createBmp(int bitsPixel, int colors, int width, int height, int rowSize, char * imageBuffer) {
 		return std::shared_ptr<BmpDelegate>(new BmpDelegate(bitsPixel, colors, width, height, rowSize, imageBuffer));
 	}
 };
