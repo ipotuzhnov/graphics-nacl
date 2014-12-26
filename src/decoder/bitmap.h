@@ -39,12 +39,27 @@ public:
 		width_ = bmp.Get("width").AsInt();
 		height_ = bmp.Get("height").AsInt();
 		rowSize_ = bmp.Get("rowSize").AsInt();
+		/*
 		pp::VarArrayBuffer pageImageData(bmp.Get("imageData"));
 		char *buffer = static_cast<char*>(pageImageData.Map());
 		int size = pageImageData.ByteLength();
 		imageBuffer_ = new char[size];
 		memcpy(imageBuffer_, buffer, size);		
 		pageImageData.Unmap();
+		*/
+		/*
+		int size = rowSize_ * height_;
+		std::string stringBuffer(bmp.Get("imageData").AsString().data(), size);
+		imageBuffer_ = new char[size];
+		memcpy(imageBuffer_, stringBuffer.data(), size);
+		*/
+		pp::VarArray arrayBuffer(bmp.Get("imageData"));
+		int size = arrayBuffer.GetLength();
+		imageBuffer_ = new char[size];
+		for (int i = 0; i < size; i++) {
+			char tmp = static_cast<char>(arrayBuffer.Get(i).AsInt());
+			imageBuffer_[i] = tmp;
+		}
 	}
 
 	~Bitmap() {
@@ -66,12 +81,29 @@ public:
 		bmp.Set("width", width_);
 		bmp.Set("height", height_);
 		bmp.Set("rowSize", rowSize_);
+		/*
+		// ARRAY BUFFER - seems to use instances memory
 		int size = rowSize_ * height_;
 		pp::VarArrayBuffer pageImageData(size);
 		char *buffer = static_cast<char*>(pageImageData.Map());
 		memcpy(buffer, imageBuffer_, size);
 		bmp.Set("imageData", pageImageData);
 		pageImageData.Unmap();
+		*/
+		/*
+		// AS STRING - utf_8 break ByteArray
+		int size = rowSize_ * height_;
+		std::string stringBuffer(imageBuffer_, size);
+		bmp.Set("imageData", stringBuffer);
+		*/
+		int size = rowSize_ * height_;
+		pp::VarArray arrayBuffer;
+		arrayBuffer.SetLength(size);
+		for (int i = 0; i < size; i++) {
+			int tmp = static_cast<int>(imageBuffer_[i]);
+			arrayBuffer.Set(i, tmp);
+		}
+		bmp.Set("imageData", arrayBuffer);
 		return bmp;
 	}
 
