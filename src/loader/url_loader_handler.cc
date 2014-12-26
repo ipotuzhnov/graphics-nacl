@@ -52,7 +52,7 @@ void URLLoaderHandler::Start() {
 
 void URLLoaderHandler::OnOpen(int32_t result) {
 	if (result != PP_OK) {
-		ReportResultAndDie(url_, "pp::URLLoader::Open() failed", false);
+		ReportResultAndDie(url_, "pp::URLLoader::Open() failed" + url_, false);
 		return;
 	}
 	// Here you would process the headers. A real program would want to at least
