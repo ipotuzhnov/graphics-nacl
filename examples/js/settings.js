@@ -1,7 +1,7 @@
 function loadSettings(path) {
   settings.setMimeType('pnacl');
   if (path == null) {
-    settings.setDocumentPath('http://172.16.2.94:88/graphics_nacl/1.djvu');
+    settings.setDocumentPath('http://172.16.2.97:88/graphics_nacl/1.djvu');
   } else {
     settings.setDocumentPath(path)
   }
@@ -9,9 +9,9 @@ function loadSettings(path) {
 
 var settings = (function() {
   var document = { path: null };
-  var mimetype = null;
+  var decoder = { mimetype: null, nmf: null };
+  var renderer = { mimetype: null, nmf: null };
   var type = null;
-  var nmf = '/graphics-nacl-git/graphics_nacl.nmf';
   
   function setDocumentPath(path) {
     settings.document.path = path;
@@ -20,9 +20,13 @@ var settings = (function() {
   function setMimeType(type) {
     settings.type = type;
     if (type === 'ppapi') {
-      settings.mimetype = 'application/x-ppapi';
+      settings.decoder.mimetype = 'application/x-ppapi-decoder';
+      settings.renderer.mimetype = 'application/x-ppapi-renderer';
     } else if (type === 'pnacl') {
-      settings.mimetype = 'application/x-pnacl';
+      settings.decoder.mimetype = 'application/x-pnacl';
+      settings.decoder.nmf = '/graphics-nacl-git/graphics-nacl-decoder.nmf';
+      settings.renderer.mimetype = 'application/x-pnacl';
+      settings.renderer.nmf = '/graphics-nacl-git/graphics-nacl-renderer.nmf';
     }
   }
   
@@ -30,9 +34,9 @@ var settings = (function() {
   return {
     // Properties
     document: document,
-    mimetype: mimetype,
+    decoder: decoder,
+    renderer: renderer,
     type: type,
-    nmf: nmf,
 
     // Functions
     setDocumentPath: setDocumentPath,

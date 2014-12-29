@@ -10,16 +10,25 @@ LIBS=-l ppapi_cpp -l ppapi -l pthread -l djvulibre
 
 CXXCPP=-D THREADMODEL=POSIXTHREADS -D HAVE_STDINT_H -D UPDATE_EXPORTS -D HAVE_NAMESPACES -D AUTOCONF -D HAVE_STDINCLUDES
 
-SOURCES=src/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc
+DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc
 
-all: final
+RENDERER_SOURCES=src/renderer/module.cc
 
-final: graphics_nacl
-	$(NACL_FINALIZE) graphics_nacl.pexe -o graphics_nacl.final.pexe
+#TODO (ilia) don't forget to compress
+all: decoder-final renderer-final
 
-graphics_nacl:
-	$(CXX) $(SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics_nacl.pexe
+decoder-final: graphics-nacl-decoder
+	$(NACL_FINALIZE) graphics-nacl-decoder.pexe -o graphics-nacl-decoder.final.pexe
+
+graphics-nacl-decoder:
+	$(CXX) $(DECODER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-decoder.pexe
+
+renderer-final: graphics-nacl-renderer
+	$(NACL_FINALIZE) graphics-nacl-renderer.pexe -o graphics-nacl-renderer.final.pexe
+
+graphics-nacl-renderer:
+	$(CXX) $(RENDERER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-renderer.pexe
 
 clean:
-	rm -rf graphics_nacl.pexe graphics_nacl.final.pexe
+	rm -rf graphics-nacl-decoder.pexe graphics-nacl-decoder.final.pexe graphics-nacl-renderer.pexe graphics-nacl-renderer.final.pexe
 

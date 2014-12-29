@@ -51,4 +51,4 @@ namespace {
 
 } // namespace
 
-#endif GRAPHICS_NACL_MESSAGES_H_
+#endif //GRAPHICS_NACL_MESSAGES_H_
