@@ -58,6 +58,8 @@ class GraphicsInstance: public pp::Instance {
 private:
 	pp::Size size_;
 	pp::Graphics2D context_;
+	bool isFlushed_;
+	bool isDrawn_;
 
 	bool isReceiving_;
 	std::shared_ptr<renderer::Bitmap> bitmap_;
@@ -76,27 +78,40 @@ private:
 	static void FlushCallback(void* instance, int32_t result) {
 		// Here we can get instance
 		// GraphicsInstance* instance_ = static_cast<GraphicsInstance*>(instance); 
-		GraphicsInstance* instance_ = static_cast<GraphicsInstance*>(instance); 
+		GraphicsInstance* instance_ = static_cast<GraphicsInstance*>(instance);
+		instance_->Flushed();
+		instance_->Drawn();
 		if (result == PP_ERROR_BADRESOURCE)
 			instance_->Update();
 	}
 
 	void PageRender() {
+		pp::ImageData image;
+		isFlushed_ = false;
 		if (bitmap_) {
 			//Bitmap bmp(imageAsDictionary);
 			//pp::ImageData image = bmp.getAsImageData(this);
-
-			pp::ImageData image = bitmap_->getAsImageData(this);
-			context_.ReplaceContents(&image);
-			pp::CompletionCallback cc(FlushCallback, this);
-			context_.Flush(cc);
+			image = bitmap_->getAsImageData(this);
+		} else {
+			PP_ImageDataFormat format = pp::ImageData::GetNativeImageDataFormat();
+			const bool kDontInitToZero = false;
+			image = pp::ImageData(this, format, size_, kDontInitToZero);
+			if(image.is_null())
+				return;
+			uint32_t color = 0;
+			FillRect(&image, 0, 0, size_.width(), size_.height(), color);
 		}
+		context_.ReplaceContents(&image);
+		pp::CompletionCallback cc(FlushCallback, this);
+		context_.Flush(cc);
 	}
 
 public:
 	explicit GraphicsInstance(PP_Instance instance)
 		: pp::Instance(instance),
 		isReceiving_(false),
+		isFlushed_(true),
+		isDrawn_(false),
 		size_(0, 0) {}
 
 	virtual bool Init(uint32_t argc, const char* argn[], const char* argv[]) {
@@ -105,7 +120,17 @@ public:
 	}
 
 	void Update() {
-		PageRender();
+		if (isFlushed_)
+			PageRender();
+	}
+
+	void Flushed() {
+		isFlushed_ = true;
+	}
+
+	void Drawn() {
+		if (isFlushed_ && bitmap_)
+			isDrawn_ = true;
 	}
 
 	// Handle message from JavaScript
@@ -140,7 +165,9 @@ public:
 			//Sleep(5000);
 			pp::VarDictionary dictionary_bitmap(dictionary_message.Get("args"));
 			bitmap_ = std::shared_ptr<renderer::Bitmap>(new renderer::Bitmap(dictionary_bitmap));
-			PageRender();
+			if ( isFlushed_ ) {
+				PageRender();
+			}
 		}
 	}
 
@@ -162,29 +189,21 @@ public:
 
 		pp::Size new_size = view.GetRect().size();
 
+		/*
 		if (new_size.width() == size_.width() &&
 			new_size.height() == size_.height()) {
 				// No change. We don't care about the position, only the size.
+				//if ( isFlushed_ && ! isDrawn_ )
+					PageRender();
 				return;
 		}
+		*/
 
 		context_ = pp::Graphics2D(this, new_size, false);
 		if (!BindGraphics(context_))
 			return;
 		size_ = new_size;
-
-		PP_ImageDataFormat format = pp::ImageData::GetNativeImageDataFormat();
-		const bool kDontInitToZero = false;
-		pp::ImageData image(this, format, size_, kDontInitToZero);
-		if(image.is_null())
-			return;
-		uint32_t color = 0;
-		FillRect(&image, 0, 0, size_.width(), size_.height(), color);
-
-		context_.ReplaceContents(&image);
-		pp::CompletionCallback cc(FlushCallback, this);
-
-		context_.Flush(cc);
+		PageRender();
 	}
 
 };
