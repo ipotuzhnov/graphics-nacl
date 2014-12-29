@@ -165,9 +165,18 @@ public:
 			//Sleep(5000);
 			pp::VarDictionary dictionary_bitmap(dictionary_message.Get("args"));
 			bitmap_ = std::shared_ptr<renderer::Bitmap>(new renderer::Bitmap(dictionary_bitmap));
+
+			PostMessage(CreateDictionaryReply(PPB_PAGE_RECEIVED, args_["id"]));
+			/*
 			if ( isFlushed_ ) {
 				PageRender();
 			}
+			*/
+		} else if (message == PPR_PAGE_RENDER) {
+			if (bitmap_)
+				PageRender();
+			else
+				return; // TODO (ilia) error
 		}
 	}
 
@@ -189,21 +198,21 @@ public:
 
 		pp::Size new_size = view.GetRect().size();
 
-		/*
+		
 		if (new_size.width() == size_.width() &&
 			new_size.height() == size_.height()) {
 				// No change. We don't care about the position, only the size.
 				//if ( isFlushed_ && ! isDrawn_ )
-					PageRender();
+				//	PageRender();
 				return;
 		}
-		*/
+		
 
 		context_ = pp::Graphics2D(this, new_size, false);
 		if (!BindGraphics(context_))
 			return;
 		size_ = new_size;
-		PageRender();
+		//PageRender();
 	}
 
 };

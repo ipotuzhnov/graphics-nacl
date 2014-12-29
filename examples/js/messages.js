@@ -35,6 +35,12 @@ var messages = {
   // Release page
   // args: ppVar.AsString() <pageId>
   PPD_RELEASE_PAGE: "PPD_RELEASE_PAGE",
+  
+  // Renderer reveived page
+  // args = ppVar.AsString() <pageId>
+  PPB_PAGE_RECEIVED: "PPB_PAGE_RECEIVED",
+  // Render page
+  PPR_PAGE_RENDER: "PPR_PAGE_RENDER",
 
   // Error
   // args: pp::Dictionary

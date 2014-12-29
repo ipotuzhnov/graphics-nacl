@@ -106,6 +106,7 @@ function onDocumentDecodeed(pages) {
 */
 
   console.log('Document is decoded and has ' + pages.length + ' pages');
+  graphics.view.viewDidScroll();
   /*
   width: 50px;
     height: 200px;
@@ -139,8 +140,8 @@ var graphics = ( function() {
         var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) + 100};
         //var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) - 500};
         //console.log(screen);
-        for (var pageNum = 0; pageNum < common.pages.length; pageNum += 2000) {
-        //for (var pageNum = 0; pageNum < common.pages.length; pageNum++) {
+        //for (var pageNum = 0; pageNum < common.pages.length; pageNum += 2000) {
+        for (var pageNum = 0; pageNum < common.pages.length; pageNum++) {
           page.top = pageOffset;
           page.bottom = page.top + Math.floor(common.pages[pageNum].height * scale);
           
@@ -162,11 +163,14 @@ var graphics = ( function() {
               //common.decoder.postMessage(message);
             }
           // If page is not on screen then remode NaCl module element
-          } else if (graphics.pages[pageId].module !== null) {
-            graphics.pages[pageId].element.removeChild(graphics.pages[pageId].module);
-            graphics.pages[pageId].module = null;
-            console.log('Remove out of screen nacl: ' + pageId + 'nacl');
-            console.log(page);
+          } else {
+            var module = graphics.pages[pageId].module;
+            if (module != null) {
+              graphics.pages[pageId].element.removeChild(graphics.pages[pageId].module);
+              graphics.pages[pageId].module = null;
+              console.log('Remove out of screen nacl: ' + pageId + 'nacl');
+              console.log(page);
+            }
           }
           // Change page offset
           pageOffset = page.bottom + 2 * margin;

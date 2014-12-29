@@ -45,6 +45,12 @@ namespace {
 	// args = ppVar.AsString() <pageId>
 	const char* const PPD_RELEASE_PAGE = "PPD_RELEASE_PAGE";
 
+	// Renderer reveived page
+	// args = ppVar.AsString() <pageId>
+	const char* const PPB_PAGE_RECEIVED = "PPB_PAGE_RECEIVED";
+	// Render page
+	const char* const PPR_PAGE_RENDER = "PPR_PAGE_RENDER";
+
 	// Error
 	// args = pp::Dictionary
 	const char* const PPB_PLUGIN_ERROR = "PPB_PLUGIN_ERROR";

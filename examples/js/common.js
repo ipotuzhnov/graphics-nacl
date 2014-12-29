@@ -403,7 +403,15 @@ var common = (function() {
             renderer.postMessage(message);
           }
           break;
-          
+        case (messages.PPB_PAGE_RECEIVED):
+          var renderer = document.getElementById(message_data.args);
+          if (renderer != null) {
+            console.log('page received');
+            //console.log(message_data.args.page.imageData[0]);
+            var message = { message: messages.PPR_PAGE_RENDER, args: 0 };
+            renderer.postMessage(message);
+          }
+          break;
           
           
         // Error handling
