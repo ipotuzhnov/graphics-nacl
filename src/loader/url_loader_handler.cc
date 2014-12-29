@@ -97,7 +97,7 @@ void URLLoaderHandler::OnOpen(int32_t result) {
 			//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
 			//pp::Var var_reply(download_progress_str);
 			//instance_->PostMessage(var_reply);
-			PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", download_progress_));
+			PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 		}
 	}
 	// We will not use the download progress anymore, so just disable it.
@@ -128,7 +128,7 @@ void URLLoaderHandler::AppendDataBytes(const char* buffer, int32_t num_bytes) {
 		//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
 		//pp::Var var_reply(download_progress_str);
 		//instance_->PostMessage(var_reply);
-		PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", download_progress_));
+		PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 	}
 }
 
@@ -195,7 +195,7 @@ void URLLoaderHandler::ReportResult(const std::string& fname, const std::string&
 		out = "URLLoaderHandler::ReportResult(Ok).\n";
 		out = "browser:notify:download:finished";
 
-		PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", "finished"));
+		PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_FINISHED, 0));
 		//OutputDebugStringA(out.c_str());
 	} else {
 		//printf("URLLoaderHandler::ReportResult(Err). %s\n", text.c_str());
@@ -203,7 +203,7 @@ void URLLoaderHandler::ReportResult(const std::string& fname, const std::string&
 		out = "browser:notify:download:error";
 
 		PostErrorMessage(instance_, text);
-		PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", "error"));
+		//PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", "error"));
 		//OutputDebugStringA(out.c_str());
 	}
 	/*

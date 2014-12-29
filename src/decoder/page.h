@@ -17,6 +17,11 @@ public:
 	DjVuPage() : 
 		isSending(false),
 		isDecoding(true) {}
+
+	~DjVuPage() {
+		if (thread.joinable())
+			thread.join();
+	}
 		/*
 	BITMAP: renderer::Bitmap
 +++isSending: bool

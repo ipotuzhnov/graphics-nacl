@@ -116,8 +116,12 @@ function onDocumentDecodeed(pages) {
 var graphics = ( function() {
   var view = ( function() {
     function pageDidLoad(pageId) {
-      var message = { target: pageId + 'nacl', type: 'notify', name: 'decode', args: 'update' };
-      graphics.pages[pageId].module.postMessage(message);
+      var module = graphics.pages[pageId].module;
+      if (module !== null) {
+        var args = { pageId: pageId + 'nacl', pageNum: module.page_num, width: module.width, height: module.height };
+        //var message = { message: messages.PPD_DECODE_PAGE, args: args };
+        //module.postMessage(message);
+      }
     }
   
     function viewDidScroll() {
@@ -135,7 +139,8 @@ var graphics = ( function() {
         var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) + 100};
         //var screen = {top: offset, bottom: offset + Math.floor(maxHeight * scale) - 500};
         //console.log(screen);
-        for (var pageNum = 0; pageNum < common.pages.length; pageNum++) {
+        for (var pageNum = 0; pageNum < common.pages.length; pageNum += 2000) {
+        //for (var pageNum = 0; pageNum < common.pages.length; pageNum++) {
           page.top = pageOffset;
           page.bottom = page.top + Math.floor(common.pages[pageNum].height * scale);
           
@@ -151,8 +156,10 @@ var graphics = ( function() {
               var pageWidth = Math.floor(common.pages[pageNum].width * scale);
               var pageHeight = Math.floor(common.pages[pageNum].height * scale);
               var args = { pageId: pageIdNaCl, pageNum: pageNum, width: pageWidth, height: pageHeight };
-              var message = { target: 'decoder', type: 'command', name: 'decode', args: args };
+              var message = { message: messages.PPD_DECODE_PAGE, args: args };
               common.decoder.postMessage(message);
+              //var message = { target: 'decoder', type: 'command', name: 'decode', args: args };
+              //common.decoder.postMessage(message);
             }
           // If page is not on screen then remode NaCl module element
           } else if (graphics.pages[pageId].module !== null) {

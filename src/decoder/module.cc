@@ -112,6 +112,12 @@ public:
 		//if ( ! IsMessageValid(dictionary_message) )
 		//	return;
 
+		// TODO (ilia) check if null by the way
+		if (!dictionary_message.Get("message").is_string()) {
+			PostErrorMessage(this, "Message is not a string");
+			return;
+		}
+
 		std::string message = dictionary_message.Get("message").AsString();
 		pp::Var message_args = dictionary_message.Get("args");
 		if (message == PPD_DOWNLOAD_START) {

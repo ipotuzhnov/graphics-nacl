@@ -98,7 +98,7 @@ void DjVuDecoder::decodeThreadFuntion_() {
 		pageArray.Set(pageNum, page);
 	}
 
-	PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_FINISHED, pageArray));
+	PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DECODE_FINISHED, pageArray));
 	return;
 
 	//pp::Var var_reply(error_);

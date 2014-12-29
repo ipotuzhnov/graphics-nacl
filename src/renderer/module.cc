@@ -20,7 +20,8 @@
 #include "ppapi/cpp/var_dictionary.h"
 #include "ppapi/utility/completion_callback_factory.h"
 
-#include "helpers/message_helper.h"
+#include "../helpers/messages.h"
+#include "../helpers/message_helper.h"
 #include "bitmap.h"
 
 #ifdef WIN32
@@ -31,11 +32,6 @@
 #undef mbstate_t
 
 namespace {
-
-	// @TODO (ilia)
-	// Message format <target>:<message_type>:<command>:<args>
-	// Instead of string messages we'll use Arrays or Dictionaries
-	// So new message format is Dictionary { target: <target>, type: <message_type>, name: <command, event or object_name>, args: <string, array or dictionary> } 
 
 	uint32_t MakeColor(uint8_t r, uint8_t g, uint8_t b) {
 		uint8_t a = 255;
@@ -69,24 +65,6 @@ private:
 	// Arguments
 	std::map<std::string, std::string> args_;
 
-	// Messages
-	// ppb - Pepper Browser
-	// ppp - Pepper Plugin
-	// gnd - Graphics NaCl Decoder
-	// gnr - Graphics NaCl Renderer
-
-	// Page is decoded
-	// args = pageId
-	const char* const PPR_PAGE_READY = "PPR_PAGE_READY";
-	// Receiving page from JS
-	// args = pp::Dictionary
-	const char* const PPR_SEND_PAGE = "PPR_SEND_PAGE";
-
-	// Request page pp::Dictionary
-	const char* const PPD_GET_PAGE = "PPD_GET_PAGE";
-
-
-
 	void ParseArgs(uint32_t argc, const char* argn[], const char* argv[]) {
 		for (uint32_t i = 0; i < argc; ++i) {
 			std::string tag = std::string(argn[i]);
@@ -103,29 +81,6 @@ private:
 			instance_->Update();
 	}
 
-	// Handle different types of messages
-
-	// Page messages
-	/*
-	void HandlePageMessage(pp::Var message, pp::Var args) {
-		if (message_type == "notify") {
-			if (name == "decode") {
-				if (args == "finished") {
-					PageRender();
-				} else if (args == "update") {
-					//PageRender();
-				}
-			} else if (name == "decoded") {
-				if (args.is_dictionary()) {
-					imageAsDictionary = args;
-					PageRender();
-				} else {
-					PostErrorMessage(this, "Args is not an array buffer"); 
-				}
-			}
-		}
-	}
-	*/
 	void PageRender() {
 		if (bitmap_) {
 			//Bitmap bmp(imageAsDictionary);
@@ -166,6 +121,12 @@ public:
 		//if ( ! IsMessageValid(dictionary_message) )
 		//	return;
 
+		// TODO (ilia) check if null by the way
+		if (!dictionary_message.Get("message").is_string()) {
+			PostErrorMessage(this, "Message is not a string");
+			return;
+		}
+
 		std::string message = dictionary_message.Get("message").AsString();
 		if (message == PPR_PAGE_READY) {
 			if ( ! isReceiving_ ) {
@@ -176,11 +137,11 @@ public:
 		} else if (message == PPR_SEND_PAGE) {
 			if ( ! dictionary_message.Get("args").is_dictionary() )
 				return;
+			//Sleep(5000);
 			pp::VarDictionary dictionary_bitmap(dictionary_message.Get("args"));
-			bitmap_ = std::make_shared<renderer::Bitmap>(renderer::Bitmap(dictionary_bitmap));
+			bitmap_ = std::shared_ptr<renderer::Bitmap>(new renderer::Bitmap(dictionary_bitmap));
 			PageRender();
 		}
-
 	}
 
 	// On view changed event

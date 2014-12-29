@@ -33,8 +33,9 @@ var common = (function() {
     // Assume host toolchains always work with the given browser.
     // The below mime-type checking might not work with
     // --register-pepper-plugins.
-    var mimetype = settings.mimetype;
-    return navigator.mimeTypes[mimetype] !== undefined;
+    var decoder_mimetype = settings.decoder.mimetype;
+    var renderer_mimetype = settings.renderer.mimetype;
+    return navigator.mimeTypes[decoder_mimetype] !== undefined && navigator.mimeTypes[renderer_mimetype] !== undefined;
   }
   
   /**
@@ -104,10 +105,10 @@ var common = (function() {
     moduleEl.setAttribute('plugin_type', 'decoder');
     moduleEl.setAttribute('docsrc', settings.document.path);
     if (settings.type == 'pnacl') {
-      moduleEl.setAttribute('src', settings.nmf);
+      moduleEl.setAttribute('src', settings.decoder.nmf);
     }
 
-    var mimetype = settings.mimetype;
+    var mimetype = settings.decoder.mimetype;
     moduleEl.setAttribute('type', mimetype);
 
     // The <EMBED> element is wrapped inside a <DIV>, which has both a 'load'
@@ -156,10 +157,10 @@ var common = (function() {
     moduleEl.setAttribute('page_num', pageNum);
     moduleEl.setAttribute('onload', 'graphics.view.pageDidLoad("' + pageId + '");');
     if (settings.type == 'pnacl') {
-      moduleEl.setAttribute('src', settings.nmf);
+      moduleEl.setAttribute('src', settings.renderer.nmf);
     }
 
-    var mimetype = settings.mimetype;
+    var mimetype = settings.renderer.mimetype;
     moduleEl.setAttribute('type', mimetype);
 
     // The <EMBED> element is wrapped inside a <DIV>, which has both a 'load'
@@ -246,7 +247,7 @@ var common = (function() {
     //console.log('load event');
     if (common.decoder === null) {
       common.decoder = document.getElementById('decoder');
-      var message = { target: 'decoder', type: 'command', name: 'download', args: 'start' };
+      var message = { message: messages.PPD_DOWNLOAD_START, args: 0 };
       common.decoder.postMessage(message);
       updateStatus('DOWNLOADING:0%');
     } else {
@@ -334,35 +335,7 @@ var common = (function() {
    */
   function handleMessage(message_event) {
     if (typeof message_event.data === 'string') {
-      //alert(message_event.data);
-      //return;
-      
-      if (message_event.data === 'download:Ok') {
-        alert('download:Ok');
-      } else if (message_event.data === 'download:Error') {
-        alert('download:Error');
-      }
-      
-      if (startsWith(message_event.data, 'Status:')) {
-        console.log(message_event.data);
-      }
-      
-      if (startsWith(message_event.data, 'browser:notify:download:')) {
-        //alert(message_event.data);
-        var command = 'browser:notify:download:';
-        var args = message_event.data.substr(command.length);
-        if (args === 'finished') {
-          updateStatus('DOWNLOADING:finished');
-          var message = { target: 'decoder', type: 'command', name: 'decode', args: 'start' };
-          common.decoder.postMessage(message);
-        } else if (args === 'error') {
-          updateStatus('DOWNLOADING:error');
-          //alert('download error');
-        } else {
-          //console.log('progress: ' + args + '%');
-          updateStatus('DOWNLOADING:' + args + '%');
-        }
-      }
+      console.log('String message ' + message_event.data);
       // @TODO (ilia) fix it later
       /*
       for (var type in defaultMessageTypes) {
@@ -376,7 +349,76 @@ var common = (function() {
       }
       */
     } else if (typeof message_event.data === 'object') {
-      var message = message_event.data;
+      var message_data = message_event.data;
+      
+      switch (message_data.message) {
+        // Document downloading
+        case (messages.PPB_DOWNLOAD_PROGRESS):
+          updateStatus('DOWNLOADING:' + message_data.args + '%');
+          break;
+        case (messages.PPB_DOWNLOAD_FINISHED):
+          updateStatus('DOWNLOADING:finished');
+          console.log('start decode');
+          var message = { message: messages.PPD_DECODE_START, args: 0 };
+          common.decoder.postMessage(message);
+          break;
+        // Document decoding
+        case (messages.PPB_DECODE_FINISHED):
+          updateStatus('DOWNLOADING:decoded');
+          common.pages = message_data.args;
+          onDocumentDecodeed(common.pages);
+          break;
+        // Page rendering
+        case (messages.PPR_PAGE_READY):
+          var renderer = document.getElementById(message_data.args);
+          if (renderer == null) {
+            var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args };
+            common.decoder.postMessage(message);
+          } else {
+            var message = { message: messages.PPR_PAGE_READY, args: message_data.args };
+            renderer.postMessage(message);
+          }
+          break;
+        case (messages.PPD_GET_PAGE):
+          var decoder = common.decoder;
+          if (decoder != null) {
+            var message = { message: messages.PPD_GET_PAGE, args: message_data.args };
+            decoder.postMessage(message);
+          }
+          break;
+        case (messages.PPR_SEND_PAGE):
+          console.log(message_data.args.pageId + ' dataLength: ' + message_data.args.page.imageData.byteLength);
+          //var arr = new Int8Array(message_data.args.page.imageData);
+          //console.log(arr);
+          var decoder = common.decoder;
+          if (decoder != null) {
+            var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args.pageId };
+            decoder.postMessage(message);
+          }
+          var renderer = document.getElementById(message_data.args.pageId);
+          if (renderer != null) {
+            console.log('sending page');
+            //console.log(message_data.args.page.imageData[0]);
+            var message = { message: messages.PPR_SEND_PAGE, args: message_data.args.page };
+            renderer.postMessage(message);
+          }
+          break;
+          
+          
+          
+        // Error handling
+        case (messages.PPB_PLUGIN_ERROR):
+          console.log(message_data);
+          break;
+        default:
+          console.log('Unhandled message');
+          console.log(message_data);
+      }
+      
+      
+      
+      
+      return;
 
       if (message.name === 'error') {
         console.log('ERROR');
