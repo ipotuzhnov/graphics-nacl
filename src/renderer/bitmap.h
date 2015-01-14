@@ -1,5 +1,19 @@
-#ifndef BITMAP_TYPE_H_
-#define BITMAP_TYPE_H_
+#ifndef __BITMAP_TYPE_H__
+#define __BITMAP_TYPE_H__
+
+#include <memory>
+
+#include <iostream>
+#include <fstream>
+
+#include <png.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdint.h>
+
+//#include "bitmap.h"
+#include "../helpers/virtual_file.h"
+#include "../base64/base64.h"
 
 #include "ppapi/cpp/var.h"
 #include "ppapi/cpp/var_dictionary.h"
@@ -50,28 +64,7 @@ namespace renderer {
 			int size = pageImageData.ByteLength();
 			imageBuffer_ = new char[size];
 			memcpy(imageBuffer_, buffer, size);		
-			
-			int getaddress = bmp.Get("address").AsInt();
-			int address = reinterpret_cast<int>(buffer);
-
 			pageImageData.Unmap();
-
-
-			/*
-			int size = rowSize_ * height_;
-			std::string stringBuffer(bmp.Get("imageData").AsString().data(), size);
-			imageBuffer_ = new char[size];
-			memcpy(imageBuffer_, stringBuffer.data(), size);
-			*/
-			/*
-			pp::VarArray arrayBuffer(bmp.Get("imageData"));
-			int size = arrayBuffer.GetLength();
-			imageBuffer_ = new char[size];
-			for (int i = 0; i < size; i++) {
-			char tmp = static_cast<char>(arrayBuffer.Get(i).AsInt());
-			imageBuffer_[i] = tmp;
-			}
-			*/
 		}
 
 		~Bitmap() {
@@ -94,34 +87,13 @@ namespace renderer {
 			bmp.Set("height", height_);
 			bmp.Set("rowSize", rowSize_);
 
-			// ARRAY BUFFER - seems to use instances memory
 			int size = rowSize_ * height_;
 			pp::VarArrayBuffer pageImageData(size);
 			char *buffer = static_cast<char*>(pageImageData.Map());
 			memcpy(buffer, imageBuffer_, size);
 			bmp.Set("imageData", pageImageData);
-			int address = reinterpret_cast<int>(buffer);
-			bmp.Set("address", address);
-			//pageImageData.Unmap();
+			pageImageData.Unmap();
 
-
-			/*
-			// AS STRING - utf_8 break ByteArray
-			int size = rowSize_ * height_;
-			std::string stringBuffer(imageBuffer_, size);
-			bmp.Set("imageData", stringBuffer);
-			*/
-			/*
-			// Very slow and inefficient way to pass byte array
-			int size = rowSize_ * height_;
-			pp::VarArray arrayBuffer;
-			arrayBuffer.SetLength(size);
-			for (int i = 0; i < size; i++) {
-			int tmp = static_cast<int>(imageBuffer_[i]);
-			arrayBuffer.Set(i, tmp);
-			}
-			bmp.Set("imageData", arrayBuffer);
-			*/
 			return bmp;
 		}
 
@@ -142,8 +114,112 @@ namespace renderer {
 			}
 			return image;
 		}
+
+		std::string getAsBase64Encoded() {
+			std::string base64encoded;
+
+			/* Virtual file */
+			struct mem_encode virtual_file;
+
+			/* initialise - put this before png_write_png() call */
+			virtual_file.buffer = NULL;
+			virtual_file.size = 0;
+
+			png_structp png_ptr = NULL;
+			png_infop info_ptr = NULL;
+			png_byte ** row_pointers = NULL;
+			int color_type = bitsPixel_ == 1 ? PNG_COLOR_TYPE_GRAY : PNG_COLOR_TYPE_RGB;
+			int depth = 8;
+
+			png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+			if (png_ptr == NULL) {
+				// TODO (ilia) send error to JS
+				return base64encoded;
+			}
+
+			info_ptr = png_create_info_struct (png_ptr);
+			if (info_ptr == NULL) {
+				// TODO (ilia) send error to JS
+				png_destroy_write_struct (&png_ptr, &info_ptr);
+				return base64encoded;
+			}
+
+			/* Set up error handling. */
+
+			if (setjmp (png_jmpbuf (png_ptr))) {
+				// TODO (ilia) send error to JS
+				png_destroy_write_struct (&png_ptr, &info_ptr);
+				return base64encoded;
+			}
+
+			/* Set image attributes. */
+
+			png_set_IHDR (png_ptr,
+				info_ptr,
+				width_,
+				height_,
+				depth,
+				color_type,
+				PNG_INTERLACE_NONE,
+				PNG_COMPRESSION_TYPE_DEFAULT,
+				PNG_FILTER_TYPE_DEFAULT);
+
+			/* Initialize rows of PNG. */
+
+			row_pointers = (png_byte **) png_malloc (png_ptr, height_ * sizeof (png_byte *));
+			for (int y = 0; y < height_; ++y) {
+				png_byte *row = (png_byte *) png_malloc (png_ptr, sizeof (uint8_t) * width_ * bitsPixel_);
+				row_pointers[y] = row;
+				for (int x = 0; x < width_; ++x) {
+					if (color_type == PNG_COLOR_TYPE_GRAY) {
+						int pixel = imageBuffer_[y * rowSize_ + x];
+						*row++ = imageBuffer_[y * rowSize_ + x];
+					}
+					if (color_type == PNG_COLOR_TYPE_RGB) {
+						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 2];
+						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 1];
+						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 0];
+					}
+				}
+			}
+
+			/* Write png to virtual file */
+			png_set_write_fn(png_ptr, &virtual_file, png_write_data_callback, png_flush_callback);
+
+			png_set_rows (png_ptr, info_ptr, row_pointers);
+			png_write_png (png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+			/* now virtual_file.buffer contains the PNG image of size virtual_file.size bytes */
+			/* Encode virtual_file.buffer to base64 */
+			base64encoded = base64_encode(reinterpret_cast<const unsigned char*>(virtual_file.buffer), virtual_file.size);
+
+			/* cleanup */
+			for (int y = 0; y < height_; y++) {
+				png_free (png_ptr, row_pointers[y]);
+			}
+			png_free (png_ptr, row_pointers);
+			
+			if(virtual_file.buffer)
+				free(virtual_file.buffer);
+
+			png_destroy_write_struct (&png_ptr, &info_ptr);
+
+			return base64encoded;
+		}
+
+		pp::VarDictionary getAsBase64Dictionary() {
+			pp::VarDictionary bmp;
+			bmp.Set("bitsPixel", bitsPixel_);
+			bmp.Set("colors", colors_);
+			bmp.Set("width", width_);
+			bmp.Set("height", height_);
+			bmp.Set("rowSize", rowSize_);
+			bmp.Set("imageData", getAsBase64Encoded());
+			return bmp;
+		}
+
 	};
 
 }
 
-#endif // BITMAP_TYPE_H_
+#endif // __BITMAP_TYPE_H__

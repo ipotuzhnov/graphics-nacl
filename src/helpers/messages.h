@@ -27,26 +27,33 @@ namespace {
 	// Notify browser that decode is finished
 	// args = pp::VarArray <pp::VarDictionary<width, height, dpi>>
 	const char* const PPB_DECODE_FINISHED = "PPB_DECODE_FINISHED";
-	// Decode page
+	// Tell plugin to decode page
 	// args = pp::Dictionary <pp::VarDictionary<pageId, pageNum, width, height>>
 	const char* const PPD_DECODE_PAGE = "PPD_DECODE_PAGE";
 
 	// Page is decoded
 	// args = pageId
 	const char* const PPR_PAGE_READY = "PPR_PAGE_READY";
+	// Request page
+	// args = pp::Dictionary
+	const char* const PPD_GET_PAGE = "PPD_GET_PAGE";
 	// Receiving page from JS
 	// args = pp::Dictionary
 	const char* const PPR_SEND_PAGE = "PPR_SEND_PAGE";
 
-	// Request page pp::Dictionary
-	const char* const PPD_GET_PAGE = "PPD_GET_PAGE";
+	// Request page as base64
+	// args = pp::Var.asString() <pageId>
+	const char* const PPD_GET_PAGE_AS_BASE64 = "PPD_GET_PAGE_AS_BASE64";
+	// Send page to browser as base64
+	// args = pp::Dictionary
+	const char* const PPB_SEND_PAGE_AS_BASE64 = "PPB_SEND_PAGE_AS_BASE64";
 
 	// Release page
-	// args = ppVar.AsString() <pageId>
+	// args = pp::Var.AsString() <pageId>
 	const char* const PPD_RELEASE_PAGE = "PPD_RELEASE_PAGE";
 
-	// Renderer reveived page
-	// args = ppVar.AsString() <pageId>
+	// Renderer received page
+	// args = pp::Var.AsString() <pageId>
 	const char* const PPB_PAGE_RECEIVED = "PPB_PAGE_RECEIVED";
 	// Render page
 	const char* const PPR_PAGE_RENDER = "PPR_PAGE_RENDER";

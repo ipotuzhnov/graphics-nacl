@@ -45,6 +45,12 @@ void DjVuDecoder::sendPage(std::string pageId) {
 	PostBitmapMessage(instance_, pageId, pages_[pageId]->bitmap->getAsDictionary());
 }
 
+void DjVuDecoder::sendPageAsBase64(std::string pageId) {
+	if (pages_.find(pageId) == pages_.end())
+		return; // TODO (ilia) Error: page does not exist
+	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
+}
+
 void DjVuDecoder::releasePage(std::string pageId) {
 	if (pages_.find(pageId) == pages_.end())
 		return; // TODO (ilia) Error: page does not exist
@@ -112,6 +118,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum, int
 	//pp::VarDictionary bitmapAsDict = iBitmap->getBmp()->getAsDictionary();
 	pages_[pageId]->isDecoding = false;
 	PostMessageToInstance(instance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
+	document_->abortPageDecode(pageNum, width, height, 0);
 }
 
 /*

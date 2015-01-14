@@ -22,6 +22,7 @@ public:
 	void startDocumentDecode(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream);
 	void startPageDecode(std::string pageId, int pageNum, int width, int height);
 	void sendPage(std::string pageId);
+	void sendPageAsBase64(std::string pageId);
 	void releasePage(std::string pageId);
 	std::shared_ptr<renderer::Bitmap> getPageBmp(std::string pageId);
 private:

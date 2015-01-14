@@ -83,6 +83,10 @@ private:
 		decoder_->sendPage(pageId);
 	}
 
+	void SendPageAsBase64(std::string pageId) {
+		decoder_->sendPageAsBase64(pageId);
+	}
+
 	void ReleasePage(std::string pageId) {
 		decoder_->releasePage(pageId);
 	}
@@ -132,6 +136,10 @@ public:
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error
 			SendPage(message_args.AsString());
+		} else if (message == PPD_GET_PAGE_AS_BASE64) {
+			if ( !message_args.is_string() )
+				return; // TODO (ilia) error
+			SendPageAsBase64(message_args.AsString());
 		} else if (message == PPD_RELEASE_PAGE) {
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error

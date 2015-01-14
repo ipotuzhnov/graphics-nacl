@@ -208,7 +208,7 @@ var common = (function() {
       window.attachListeners();
     }
   }
-
+  
   /**
    * Called when the NaCl module fails to load.
    *
@@ -217,8 +217,12 @@ var common = (function() {
   function handleError(event) {
     // We can't use common.naclModule yet because the module has not been
     // loaded.
-    var moduleEl = document.getElementById('nacl_module');
+    //var moduleEl = document.getElementById('nacl_module');
+    var moduleEl = document.getElementById('decoder');
+    
     updateStatus('ERROR [' + moduleEl.lastError + ']');
+    console.log('ERROR [' + moduleEl.lastError + ']');
+    console.log(event);
   }
 
   /**
@@ -370,13 +374,20 @@ var common = (function() {
           break;
         // Page rendering
         case (messages.PPR_PAGE_READY):
-          var renderer = document.getElementById(message_data.args);
-          if (renderer == null) {
+          var element = document.getElementById(message_data.args);
+          if (element == null) {
             var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args };
             common.decoder.postMessage(message);
           } else {
-            var message = { message: messages.PPR_PAGE_READY, args: message_data.args };
-            renderer.postMessage(message);
+            var type = element.nodeName;
+            if (type == "IMG") {
+              var message = { message: messages.PPD_GET_PAGE_AS_BASE64, args: message_data.args };
+              common.decoder.postMessage(message);
+            }
+            if (type == "EMBED") {
+              var message = { message: messages.PPR_PAGE_READY, args: message_data.args };
+              renderer.postMessage(message);
+            }
           }
           break;
         case (messages.PPD_GET_PAGE):
@@ -403,6 +414,17 @@ var common = (function() {
             renderer.postMessage(message);
           }
           break;
+        case (messages.PPB_SEND_PAGE_AS_BASE64):
+          var imgEl = document.getElementById(message_data.args.pageId);
+          if (imgEl != null) {
+            graphics.pages[imgEl.parentNode.id].page = message_data.args.page;
+          }
+          var decoder = common.decoder;
+          if (decoder != null) {
+            var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args.pageId };
+            decoder.postMessage(message);
+          }
+          break;
         case (messages.PPB_PAGE_RECEIVED):
           var renderer = document.getElementById(message_data.args);
           if (renderer != null) {
@@ -412,8 +434,6 @@ var common = (function() {
             renderer.postMessage(message);
           }
           break;
-          
-          
         // Error handling
         case (messages.PPB_PLUGIN_ERROR):
           console.log(message_data);

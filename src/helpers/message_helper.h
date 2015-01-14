@@ -50,6 +50,14 @@ namespace {
 		PostMessageToInstance(instance, CreateDictionaryReply(PPR_SEND_PAGE, var_bitmap));
 	}
 
+	// Post bitmap as base64 to the browser
+	void PostBitmapMessageAsBase64(pp::Instance *instance, std::string pageId, pp::VarDictionary bitmapAsDict) {
+		pp::VarDictionary var_bitmap;
+		var_bitmap.Set("pageId", pageId);
+		var_bitmap.Set("page", bitmapAsDict);
+		PostMessageToInstance(instance, CreateDictionaryReply(PPB_SEND_PAGE_AS_BASE64, var_bitmap));
+	}
+
 	/*
 	// Post object to the browser
 	void PostObjectMessage(pp::Instance *instance, pp::Var target, pp::Var object_name, pp::Var object) {
