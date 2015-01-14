@@ -6,11 +6,11 @@ CXXINCLUDE=-I $(NACL_SDK_ROOT)/include -I $(DJVULIBRE_ROOT)/libdjvu -I $(DDJVU_R
 CXXFLAGS=-std=gnu++11 $(CXXINCLUDE)
 
 LDFLAGS=-L $(NACL_SDK_ROOT)/lib/pnacl/Release/ -L $(DJVULIBRE_ROOT)/libdjvu/.libs
-LIBS=-l ppapi_cpp -l ppapi -l pthread -l djvulibre
+LIBS=-l ppapi_cpp -l ppapi -l pthread -l djvulibre -l png -l z
 
 CXXCPP=-D THREADMODEL=POSIXTHREADS -D HAVE_STDINT_H -D UPDATE_EXPORTS -D HAVE_NAMESPACES -D AUTOCONF -D HAVE_STDINCLUDES
 
-DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc
+DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc src/base64/base64.cc
 
 RENDERER_SOURCES=src/renderer/module.cc
 
