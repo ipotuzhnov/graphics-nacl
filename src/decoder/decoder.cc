@@ -9,8 +9,8 @@ DjVuDecoder::DjVuDecoder()
 
 DjVuDecoder::~DjVuDecoder() {
 	for (auto it = pages_.begin(); it != pages_.begin(); ++it) {
-		if (it->second->thread.joinable())
-			it->second->thread.join();
+		if (it->second->decoding_thread.joinable())
+			it->second->decoding_thread.join();
 	}
 	/*
 	if (updateThread_.joinable())
@@ -34,7 +34,7 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, int width, in
 		return; // TODO (ilia) Error: page already exists
 
 	pages_[pageId] = std::make_shared<DjVuPage>();
-	pages_[pageId]->thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, width, height);
+	pages_[pageId]->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, width, height);
 }
 
 void DjVuDecoder::sendPage(std::string pageId) {
@@ -48,7 +48,10 @@ void DjVuDecoder::sendPage(std::string pageId) {
 void DjVuDecoder::sendPageAsBase64(std::string pageId) {
 	if (pages_.find(pageId) == pages_.end())
 		return; // TODO (ilia) Error: page does not exist
-	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
+	// Send image in separate thread
+	pages_[pageId]->sending_thread = std::thread(&DjVuDecoder::sendPageThreadFunction_, this, pageId);
+
+	//PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
 }
 
 void DjVuDecoder::releasePage(std::string pageId) {
@@ -69,6 +72,7 @@ std::shared_ptr<renderer::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
 }
 
 void DjVuDecoder::decodeThreadFuntion_() {
+	// TODO (ilia) report errors
 	if (stream_) {
 		if (stream_->getError()) {
 			error_ = "djvu:Error";
@@ -119,6 +123,10 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum, int
 	pages_[pageId]->isDecoding = false;
 	PostMessageToInstance(instance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
 	document_->abortPageDecode(pageNum, width, height, 0);
+}
+
+void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
+	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
 }
 
 /*

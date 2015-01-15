@@ -28,6 +28,7 @@ public:
 private:
 	void decodeThreadFuntion_();
 	void decodePageThreadFunction_(std::string pageId, int pageNum, int width, int height);
+	void sendPageThreadFunction_(std::string pageId);
 	//void updateThreadFuntion_();
 
 	std::shared_ptr<UrlDownloadStream> stream_;

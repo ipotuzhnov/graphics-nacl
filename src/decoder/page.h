@@ -11,7 +11,8 @@ public:
 	std::shared_ptr<renderer::Bitmap> bitmap;
 	bool isSending;
 
-	std::thread thread;
+	std::thread decoding_thread;
+	std::thread sending_thread;
 	bool isDecoding;
 
 	DjVuPage() : 
@@ -19,8 +20,10 @@ public:
 		isDecoding(true) {}
 
 	~DjVuPage() {
-		if (thread.joinable())
-			thread.join();
+		if (decoding_thread.joinable())
+			decoding_thread.join();
+		if (sending_thread.joinable())
+			sending_thread.join();
 	}
 		/*
 	BITMAP: renderer::Bitmap
