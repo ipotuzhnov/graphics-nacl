@@ -17,7 +17,7 @@ function viewDidScroll() {
 }
 
 function onDocumentDecodeed(pages) {
-  var scale = 0.2;
+  var scale = 0.4;
   var scrollBarSize = 20;
   
   var listenerDiv = document.getElementById('listener');
@@ -150,7 +150,7 @@ var graphics = ( function() {
         var offset = graphics.view.element.scrollTop;
         
         // Update page visibility
-        var scale = 0.2;
+        var scale = 0.4;
         var scrollBarSize = 20;
         var margin = 10;
         //var pages = common.pages;

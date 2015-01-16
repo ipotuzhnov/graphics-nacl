@@ -76,7 +76,8 @@ private:
 	}
 
 	void DecodePage(pp::VarDictionary page) {
-		decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), page.Get("width").AsInt(), page.Get("height").AsInt());
+		decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), page.Get("size"), page.Get("frame"));
+		//decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), pp::VarDictionary(page.Get("size")), pp::VarDictionary(page.Get("frame")));
 	}
 
 	void SendPage(std::string pageId) {

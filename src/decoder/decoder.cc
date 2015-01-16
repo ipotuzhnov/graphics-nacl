@@ -28,13 +28,13 @@ void DjVuDecoder::startDocumentDecode(pp::Instance* instance, std::shared_ptr<Ur
 	decodeThread_ = std::thread(&DjVuDecoder::decodeThreadFuntion_, this);
 }
 
-void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, int width, int height) {
+void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size, pp::Var frame) {
 	//if ( pages_[pageId].first ) {
 	if (pages_.find(pageId) != pages_.end())
 		return; // TODO (ilia) Error: page already exists
 
 	pages_[pageId] = std::make_shared<DjVuPage>();
-	pages_[pageId]->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, width, height);
+	pages_[pageId]->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
 }
 
 void DjVuDecoder::sendPage(std::string pageId) {
@@ -117,16 +117,89 @@ void DjVuDecoder::decodeThreadFuntion_() {
 	//updateThread_ = std::thread(&PluginWindow::updateThreadFuntion_, this);
 }
 
-void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum, int width, int height) {
-	pages_[pageId]->bitmap = document_->getPageBitmap(pageNum, width, height, true)->getBmp();
+void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp::Var size_var, pp::Var frame_var) {
+	std::string error;
+	// Check if size is valid
+	if (!size_var.is_dictionary()) {
+		error = pageId + "Error: size is not a dictionary";
+		PostErrorMessage(instance_, error);
+		return;
+	}
+	pp::VarDictionary size(size_var);
+	std::shared_ptr<DjVuSize> valid_size = std::make_shared<DjVuSize>();
+	if (!size.Get("width").is_int())
+		error += " Error: size.width is not an integer value.";
+	if (!size.Get("height").is_int())
+		error += " Error: size.height is not an integer value.";
+	if (!error.empty()) {
+		error = pageId + error;
+		PostErrorMessage(instance_, error);
+		return;
+	}
+	valid_size->width = size.Get("width").AsInt();
+	valid_size->height = size.Get("height").AsInt();
+	
+	// Check if frame is null
+	std::shared_ptr<DjVuFrame> valid_frame = std::make_shared<DjVuFrame>();
+	if (frame_var.is_null()) {
+		valid_frame->left = 0;
+		valid_frame->top = 0;
+		valid_frame->right = valid_size->width;
+		valid_frame->bottom = valid_size->height;
+	} else {
+		if (!frame_var.is_dictionary()) {
+			error = pageId + " Error: frame is not a dictionary";
+			PostErrorMessage(instance_, error);
+			return;
+		}
+		pp::VarDictionary frame(frame_var);
+		// Check if frame is valid
+		int left, top, right, bottom, width, height;
+		if (!frame.Get("left").is_int())
+			error += " Error: frame.lift is not an integer value.";
+		if (!frame.Get("top").is_int())
+			error += " Error: frame.top is not an integer value.";
+		if (!frame.Get("right").is_int())
+			error += " Error: frame.right is not an integer value.";
+		if (!frame.Get("bottom").is_int())
+			error += " Error: frame.bottom is not an integer value.";
+		left = frame.Get("left").AsInt();
+		top = frame.Get("top").AsInt();
+		right = frame.Get("right").AsInt();
+		bottom = frame.Get("bottom").AsInt();
+		if (!error.empty()) {
+			error = pageId + error;
+			PostErrorMessage(instance_, error);
+			return;
+		}
+		width = right - left;
+		height = bottom - top;
+		if (left >= right)
+			error += " Error: frame.left is greater than frame.left.";
+		if (top >= bottom)
+			error += " Error: frame.top is greater than frame.bottom.";
+		if (width > valid_size->width)
+			error += " Error: frame width is greater than size.width.";
+		if (height > valid_size->height)
+			error += " Error: frame height is greater than size.height.";
+		if (!error.empty()) {
+			error = pageId + error;
+			PostErrorMessage(instance_, error);
+			return;
+		}
+	}
+	pages_[pageId]->size = valid_size;
+	pages_[pageId]->frame = valid_frame;
+	
+	pages_[pageId]->bitmap = document_->getPageBitmap(pageNum, valid_size->width, valid_size->height, true)->getBmp();
 	//pp::VarDictionary bitmapAsDict = iBitmap->getBmp()->getAsDictionary();
 	pages_[pageId]->isDecoding = false;
 	PostMessageToInstance(instance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
-	document_->abortPageDecode(pageNum, width, height, 0);
+	document_->abortPageDecode(pageNum, valid_size->width, valid_size->height, 0);
 }
 
 void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
-	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
+	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary(pages_[pageId]->frame));
 }
 
 /*

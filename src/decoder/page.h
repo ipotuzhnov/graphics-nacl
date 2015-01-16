@@ -15,6 +15,9 @@ public:
 	std::thread sending_thread;
 	bool isDecoding;
 
+	std::shared_ptr<DjVuSize> size;
+	std::shared_ptr<DjVuFrame> frame;
+
 	DjVuPage() : 
 		isSending(false),
 		isDecoding(true) {}

@@ -442,57 +442,6 @@ var common = (function() {
           console.log('Unhandled message');
           console.log(message_data);
       }
-      
-      
-      
-      
-      return;
-
-      if (message.name === 'error') {
-        console.log('ERROR');
-      }
-
-      if (message.target === 'browser') {
-        // Handle notifications
-        if (message.type === 'notify') {
-          // Errors
-          if (message.name === 'error') { 
-            console.log('Error');
-            console.log(message.args);
-          // Document download
-          } else if (message.name === 'download') {
-            if (message.args === 'finished') {
-              updateStatus('DOWNLOADING:finished');
-              var message = { target: 'decoder', type: 'command', name: 'decode', args: 'start' };
-              common.decoder.postMessage(message);
-            } else {
-              if (typeof(message.args) === 'number') {
-                updateStatus('DOWNLOADING:' + message.args + '%');
-              }
-            }
-          }
-        }
-        
-        // Handle data passing
-        if (message.type === 'object') {
-          if (message.name === 'pages') {
-            common.pages = message.args;
-            onDocumentDecodeed(common.pages);
-          }
-        }
-      } else {
-        if (message.type === 'notify') {
-          if (message.name === 'decoded') {
-            console.log('Page ' + message.target + ' decoded');
-            var pageId = message.target;
-            var pageEl = document.getElementById(pageId);
-            var message = { target: pageId, type: 'notify', name: 'decoded', args: message.args };
-            console.log(message);
-            pageEl.postMessage(message);
-          }
-        }
-      }
-      //console.log(message_event.data);
     }
 
     if (typeof window.handleMessage !== 'undefined') {

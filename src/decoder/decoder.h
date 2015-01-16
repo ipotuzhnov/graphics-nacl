@@ -20,14 +20,14 @@ public:
 	~DjVuDecoder();
 
 	void startDocumentDecode(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream);
-	void startPageDecode(std::string pageId, int pageNum, int width, int height);
+	void startPageDecode(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
 	void sendPage(std::string pageId);
 	void sendPageAsBase64(std::string pageId);
 	void releasePage(std::string pageId);
 	std::shared_ptr<renderer::Bitmap> getPageBmp(std::string pageId);
 private:
 	void decodeThreadFuntion_();
-	void decodePageThreadFunction_(std::string pageId, int pageNum, int width, int height);
+	void decodePageThreadFunction_(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
 	void sendPageThreadFunction_(std::string pageId);
 	//void updateThreadFuntion_();
 

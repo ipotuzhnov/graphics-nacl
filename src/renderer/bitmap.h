@@ -21,6 +21,20 @@
 #include "ppapi/cpp/image_data.h"
 #include "ppapi/cpp/instance.h"
 
+namespace {
+struct DjVuSize {
+	int width;
+	int height;
+};
+
+struct DjVuFrame {
+	int left;
+	int top;
+	int right;
+	int bottom;
+};
+}
+
 namespace renderer {
 
 	class Bitmap {
@@ -115,7 +129,7 @@ namespace renderer {
 			return image;
 		}
 
-		std::string getAsBase64Encoded() {
+		std::string getAsBase64Encoded(std::shared_ptr<DjVuFrame> frame) {
 			std::string base64encoded;
 
 			/* Virtual file */
@@ -152,12 +166,16 @@ namespace renderer {
 				return base64encoded;
 			}
 
+			/* Calculate image attributes. */
+			int width = frame->right - frame->left;
+			int height = frame->bottom - frame->top;
+
 			/* Set image attributes. */
 
 			png_set_IHDR (png_ptr,
 				info_ptr,
-				width_,
-				height_,
+				width,
+				height,
 				depth,
 				color_type,
 				PNG_INTERLACE_NONE,
@@ -166,13 +184,12 @@ namespace renderer {
 
 			/* Initialize rows of PNG. */
 
-			row_pointers = (png_byte **) png_malloc (png_ptr, height_ * sizeof (png_byte *));
-			for (int y = 0; y < height_; ++y) {
-				png_byte *row = (png_byte *) png_malloc (png_ptr, sizeof (uint8_t) * width_ * bitsPixel_);
+			row_pointers = (png_byte **) png_malloc (png_ptr, height * sizeof (png_byte *));
+			for (int y = frame->top; y < frame->bottom; ++y) {
+				png_byte *row = (png_byte *) png_malloc (png_ptr, sizeof (uint8_t) * width * bitsPixel_);
 				row_pointers[y] = row;
-				for (int x = 0; x < width_; ++x) {
+				for (int x = frame->left; x < frame->right; ++x) {
 					if (color_type == PNG_COLOR_TYPE_GRAY) {
-						int pixel = imageBuffer_[y * rowSize_ + x];
 						*row++ = imageBuffer_[y * rowSize_ + x];
 					}
 					if (color_type == PNG_COLOR_TYPE_RGB) {
@@ -194,7 +211,7 @@ namespace renderer {
 			base64encoded = base64_encode(reinterpret_cast<const unsigned char*>(virtual_file.buffer), virtual_file.size);
 
 			/* cleanup */
-			for (int y = 0; y < height_; y++) {
+			for (int y = frame->top; y < frame->bottom; y++) {
 				png_free (png_ptr, row_pointers[y]);
 			}
 			png_free (png_ptr, row_pointers);
@@ -207,14 +224,16 @@ namespace renderer {
 			return base64encoded;
 		}
 
-		pp::VarDictionary getAsBase64Dictionary() {
+		pp::VarDictionary getAsBase64Dictionary(std::shared_ptr<DjVuFrame> frame) {
+			int width = frame->right - frame->left;
+			int height = frame->bottom - frame->top;
 			pp::VarDictionary bmp;
 			bmp.Set("bitsPixel", bitsPixel_);
 			bmp.Set("colors", colors_);
-			bmp.Set("width", width_);
-			bmp.Set("height", height_);
+			bmp.Set("width", width);
+			bmp.Set("height", height);
 			bmp.Set("rowSize", rowSize_);
-			bmp.Set("imageData", getAsBase64Encoded());
+			bmp.Set("imageData", getAsBase64Encoded(frame));
 			return bmp;
 		}
 
