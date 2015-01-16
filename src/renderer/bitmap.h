@@ -184,18 +184,22 @@ namespace renderer {
 
 			/* Initialize rows of PNG. */
 
+			int offsetX = frame->left;
+			int offsetY = frame->top;
 			row_pointers = (png_byte **) png_malloc (png_ptr, height * sizeof (png_byte *));
-			for (int y = frame->top; y < frame->bottom; ++y) {
+			for (int y = 0; y < height; ++y) {
 				png_byte *row = (png_byte *) png_malloc (png_ptr, sizeof (uint8_t) * width * bitsPixel_);
 				row_pointers[y] = row;
-				for (int x = frame->left; x < frame->right; ++x) {
+				for (int x = 0; x < width; ++x) {
+					int dx = x + offsetX;
+					int dy = y + offsetY;
 					if (color_type == PNG_COLOR_TYPE_GRAY) {
-						*row++ = imageBuffer_[y * rowSize_ + x];
+						*row++ = imageBuffer_[dy * rowSize_ + dx];
 					}
 					if (color_type == PNG_COLOR_TYPE_RGB) {
-						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 2];
-						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 1];
-						*row++ = imageBuffer_[y * rowSize_ + x * bitsPixel_ + 0];
+						*row++ = imageBuffer_[dy * rowSize_ + dx * bitsPixel_ + 2];
+						*row++ = imageBuffer_[dy * rowSize_ + dx * bitsPixel_ + 1];
+						*row++ = imageBuffer_[dy * rowSize_ + dx * bitsPixel_ + 0];
 					}
 				}
 			}
@@ -211,7 +215,7 @@ namespace renderer {
 			base64encoded = base64_encode(reinterpret_cast<const unsigned char*>(virtual_file.buffer), virtual_file.size);
 
 			/* cleanup */
-			for (int y = frame->top; y < frame->bottom; y++) {
+			for (int y = 0; y < height; y++) {
 				png_free (png_ptr, row_pointers[y]);
 			}
 			png_free (png_ptr, row_pointers);

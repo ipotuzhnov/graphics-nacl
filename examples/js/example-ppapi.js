@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var width = Math.round(pages[0].width / 1);
         var height = Math.round(pages[0].height / 1);
         var size = { width: width, height: height };
-        var page_settings = { pageNumber: 0, size: size };
+        var frame = { left: 100, top: 100, right: 200, bottom: 200 };
+        var page_settings = { pageNumber: 0, size: size, frame: frame };
         decoder.getPage(page_settings, function(err, page) {
           if (err) throw err;
           // Create image element

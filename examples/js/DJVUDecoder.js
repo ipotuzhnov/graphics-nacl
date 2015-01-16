@@ -311,7 +311,7 @@ DJVUDecoder.prototype.getPage = function(settings, callback) {
 }
 
 /**
- * TODO (ilia)
+ * Get text layer of the page.
  */
 DJVUDecoder.prototype.getText = function(settings, callback) {
   var x1 = null;

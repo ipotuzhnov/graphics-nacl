@@ -187,6 +187,10 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 			PostErrorMessage(instance_, error);
 			return;
 		}
+		valid_frame->left = left;
+		valid_frame->top = top;
+		valid_frame->right = right;
+		valid_frame->bottom = bottom;
 	}
 	pages_[pageId]->size = valid_size;
 	pages_[pageId]->frame = valid_frame;
