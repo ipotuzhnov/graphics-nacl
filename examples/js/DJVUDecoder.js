@@ -259,10 +259,7 @@ DJVUDecoder.prototype.createNaClModule = function() {
   moduleEl.offsetTop;
 
   // Host plugins don't send a moduleDidLoad message. We'll fake it here.
-  // TODO (ilia) figure it out
-  var isHost = true;
-  //var isHost = isHostToolchain('win');
-  if (isHost) {
+  if (this.type == 'ppapi') {
     window.setTimeout(function() {
       moduleEl.readyState = 1;
       moduleEl.dispatchEvent(new CustomEvent('loadstart'));
