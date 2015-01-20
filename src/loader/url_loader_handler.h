@@ -15,6 +15,8 @@
 #include "ppapi/utility/completion_callback_factory.h"
 #include "url_download_stream.h"
 
+#include "../helpers/safe_instance.h"
+
 #define READ_BUFFER_SIZE 32768
 
 // URLLoaderHandler is used to download data from |url|. When download is
@@ -38,13 +40,13 @@ public:
 	// Creates instance of URLLoaderHandler on the heap.
 	// URLLoaderHandler objects shall be created only on the heap (they
 	// self-destroy when all data is in).
-	static URLLoaderHandler* Create(pp::Instance* instance_,
+	static URLLoaderHandler* Create(std::shared_ptr<SafeInstance> safeInstance,
 		const std::string& url, std::shared_ptr<UrlDownloadStream> stream);
 	// Initiates page (URL) download.
 	void Start();
 
 private:
-	URLLoaderHandler(pp::Instance* instance_, const std::string& url, std::shared_ptr<UrlDownloadStream> stream);
+	URLLoaderHandler(std::shared_ptr<SafeInstance> safeInstance, const std::string& url, std::shared_ptr<UrlDownloadStream> stream);
 	~URLLoaderHandler();
 
 	// Callback for the pp::URLLoader::Open().
@@ -77,7 +79,7 @@ private:
 		const std::string& text,
 		bool success);
 
-	pp::Instance* instance_;  // Weak pointer.
+	std::shared_ptr<SafeInstance> safeInstance_;  // Weak pointer.
 	std::string url_;         // URL to be downloaded.
 	pp::URLRequestInfo url_request_;
 	pp::URLLoader url_loader_;  // URLLoader provides an API to download URLs.

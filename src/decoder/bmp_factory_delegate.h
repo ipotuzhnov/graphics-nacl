@@ -6,10 +6,10 @@
 
 class BmpFactoryDelegate: public ddjvu::IBmpFactory<renderer::Bitmap> {
 private:
-	pp::Instance* instance_;  // Weak pointer.
+	std::shared_ptr<SafeInstance> safeInstance_;  // Weak pointer.
 public:
-	BmpFactoryDelegate(pp::Instance* instance) {
-		instance_ = instance;
+	BmpFactoryDelegate(std::shared_ptr<SafeInstance> safeInstance) {
+		safeInstance_ = safeInstance;
 	}
 
 	std::shared_ptr<ddjvu::IBmp<renderer::Bitmap>> createBmp(int bitsPixel, int colors, int width, int height, int rowSize, char * imageBuffer) {

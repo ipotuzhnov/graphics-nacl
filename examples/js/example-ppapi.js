@@ -31,25 +31,50 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('Document is decoded');
       console.log('and has ' + pages.length + ' pages');
       
-      if (pages.length > 0) {
-        // Create settings for the page
-        var width = Math.round(pages[0].width / 1);
-        var height = Math.round(pages[0].height / 1);
-        var size = { width: width, height: height };
-        var frame = { left: 100, top: 100, right: 200, bottom: 200 };
-        var page_settings = { pageNumber: 0, size: size, frame: frame };
-        decoder.getPage(page_settings, function(err, page) {
-          if (err) throw err;
-          // Create image element
-          var imageEl = document.createElement('img');
-          imageEl.setAttribute('id', 'examplePageImg0');
-          imageEl.setAttribute('src', page.imageData);
-          imageEl.setAttribute('width', page.width);
-          imageEl.setAttribute('height', page.height);
-          // Add image to the body
-          document.body.appendChild(imageEl);
-        });
-      }
+      // Test get page text
+      //testGetPageText();
+      
+      // Test page decoding
+      //testGetPage(pages);
+      
+      // Anync page decoding. 
+      // 5 pages by itteration.
+      tests.testAsyncGetPage(decoder, pages, 5);
+      // Anync page decoding. 
+      // tests.testAsyncGetPage(decoder, pages, 7, 15);
+      //tests.testAsyncGetPage(decoder, pages, 5, 15);
     }
   );
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

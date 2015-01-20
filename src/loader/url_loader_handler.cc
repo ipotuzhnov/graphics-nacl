@@ -8,6 +8,7 @@
 #include "ppapi/cpp/var.h"
 
 #include "url_loader_handler.h"
+#include "../helpers/safe_instance.h"
 #include "../helpers/message_helper.h"
 
 #ifdef WIN32
@@ -19,15 +20,15 @@
 #pragma warning(disable : 4355)
 #endif
 
-URLLoaderHandler* URLLoaderHandler::Create(pp::Instance* instance, const std::string& url, std::shared_ptr<UrlDownloadStream> stream) {
-	return new URLLoaderHandler(instance, url, stream);
+URLLoaderHandler* URLLoaderHandler::Create(std::shared_ptr<SafeInstance> safeInstance, const std::string& url, std::shared_ptr<UrlDownloadStream> stream) {
+	return new URLLoaderHandler(safeInstance, url, stream);
 }
 
-URLLoaderHandler::URLLoaderHandler(pp::Instance* instance, const std::string& url, std::shared_ptr<UrlDownloadStream> stream)
-	: instance_(instance),
+URLLoaderHandler::URLLoaderHandler(std::shared_ptr<SafeInstance> safeInstance, const std::string& url, std::shared_ptr<UrlDownloadStream> stream)
+	: safeInstance_(safeInstance),
 	url_(url),
-	url_request_(instance),
-	url_loader_(instance),
+	url_request_(safeInstance_->instance),
+	url_loader_(safeInstance_->instance),
 	buffer_(new char[READ_BUFFER_SIZE]),
 	download_progress_(0),
 	bytes_received_(0),
@@ -97,7 +98,7 @@ void URLLoaderHandler::OnOpen(int32_t result) {
 			//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
 			//pp::Var var_reply(download_progress_str);
 			//instance_->PostMessage(var_reply);
-			PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
+			PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 		}
 	}
 	// We will not use the download progress anymore, so just disable it.
@@ -128,7 +129,7 @@ void URLLoaderHandler::AppendDataBytes(const char* buffer, int32_t num_bytes) {
 		//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
 		//pp::Var var_reply(download_progress_str);
 		//instance_->PostMessage(var_reply);
-		PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
+		PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 	}
 }
 
@@ -195,14 +196,14 @@ void URLLoaderHandler::ReportResult(const std::string& fname, const std::string&
 		out = "URLLoaderHandler::ReportResult(Ok).\n";
 		out = "browser:notify:download:finished";
 
-		PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DOWNLOAD_FINISHED, 0));
+		PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_FINISHED, 0));
 		//OutputDebugStringA(out.c_str());
 	} else {
 		//printf("URLLoaderHandler::ReportResult(Err). %s\n", text.c_str());
 		out = "URLLoaderHandler::ReportResult(Err). %s\n" + text;
 		out = "browser:notify:download:error";
 
-		PostErrorMessage(instance_, text);
+		PostErrorMessage(safeInstance_, text);
 		//PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", "error"));
 		//OutputDebugStringA(out.c_str());
 	}

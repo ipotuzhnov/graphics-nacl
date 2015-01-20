@@ -1,16 +1,25 @@
 #include "decoder.h"
 
+#include <locale>
+#include <codecvt>
+
 #include "../helpers/messages.h"
 #include "../helpers/message_helper.h"
 
 DjVuDecoder::DjVuDecoder()
-	: error_("djvu:Ok") {
+	: error_("djvu:Ok"), numberOfPages_(0) {
 }
 
 DjVuDecoder::~DjVuDecoder() {
-	for (auto it = pages_.begin(); it != pages_.begin(); ++it) {
-		if (it->second->decoding_thread.joinable())
-			it->second->decoding_thread.join();
+	for (auto it = pages_.begin(); it != pages_.end(); ++it) {
+		//if (it->second->isDecoding) {
+			if (it->second->decoding_thread.joinable())
+				it->second->decoding_thread.join();
+		//}
+		//if (it->second->isSending) {
+			if (it->second->sending_thread.joinable())
+				it->second->sending_thread.join();
+		//}
 	}
 	/*
 	if (updateThread_.joinable())
@@ -20,10 +29,10 @@ DjVuDecoder::~DjVuDecoder() {
 		decodeThread_.join();
 }
 
-void DjVuDecoder::startDocumentDecode(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream) {
+void DjVuDecoder::startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance, std::shared_ptr<UrlDownloadStream> stream) {
 	stream_ = stream;
-	instance_ = instance;
-	delegateBmpFactory_ = std::make_shared<BmpFactoryDelegate>(instance);
+	safeInstance_ = safeInstance;
+	delegateBmpFactory_ = std::make_shared<BmpFactoryDelegate>(safeInstance_);
 
 	decodeThread_ = std::thread(&DjVuDecoder::decodeThreadFuntion_, this);
 }
@@ -33,23 +42,33 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size,
 	if (pages_.find(pageId) != pages_.end())
 		return; // TODO (ilia) Error: page already exists
 
+	if (pageNum >= numberOfPages_)
+		return; // TODO (ilia) Error: page number is too big
 	pages_[pageId] = std::make_shared<DjVuPage>();
-	pages_[pageId]->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
+	auto page = pages_[pageId];
+	if (!page)
+		return; // TODO (ilia) page does not exist	
+	page->pageNum = pageNum;
+	page->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
 }
 
 void DjVuDecoder::sendPage(std::string pageId) {
 	if (pages_.find(pageId) == pages_.end())
 		return; // TODO (ilia) Error: page does not exist
-
-	pages_[pageId]->isSending = true;
-	PostBitmapMessage(instance_, pageId, pages_[pageId]->bitmap->getAsDictionary());
+	auto page = pages_[pageId];
+	if (!page)
+		return; // TODO (ilia) page does not exist
+	PostBitmapMessage(safeInstance_, pageId, page->bitmap->getAsDictionary());
 }
 
 void DjVuDecoder::sendPageAsBase64(std::string pageId) {
 	if (pages_.find(pageId) == pages_.end())
 		return; // TODO (ilia) Error: page does not exist
 	// Send image in separate thread
-	pages_[pageId]->sending_thread = std::thread(&DjVuDecoder::sendPageThreadFunction_, this, pageId);
+	auto page = pages_[pageId];
+	if (!page)
+		return; // TODO (ilia) page does not exist
+	page->sending_thread = std::thread(&DjVuDecoder::sendPageThreadFunction_, this, pageId);
 
 	//PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary());
 }
@@ -59,6 +78,37 @@ void DjVuDecoder::releasePage(std::string pageId) {
 		return; // TODO (ilia) Error: page does not exist
 
 	pages_.erase(pageId);
+}
+
+void DjVuDecoder::getPageText(std::string pageId, int pageNum) {
+	if (pageNum >= numberOfPages_)
+		return; // TODO (ilia) Error: page number is too big
+	auto document = document_;
+	if (!document)
+		return; // TODO (ilia) document does not exist
+	std::vector<ddjvu::Text> pageText = document->getPageText(pageNum);
+	pp::VarArray var_page_text;
+	var_page_text.SetLength(pageText.size());
+	for (int i = 0; i < pageText.size(); i++) {		
+		// Word
+		std::wstring w_word = pageText[i].getWord();
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+		std::string word = converter.to_bytes(w_word);
+		pp::Var var_word(word);
+		// Rect
+		pp::VarDictionary var_rect;
+		ddjvu::Rectangle rect = pageText[i].getRect();
+		var_rect.Set("left", rect.left);
+		var_rect.Set("top", rect.top);
+		var_rect.Set("right", rect.right);
+		var_rect.Set("bottom", rect.bottom);
+		// Word and rect to be set
+		pp::VarDictionary var_word_rect;
+		var_word_rect.Set("word", var_word);
+		var_word_rect.Set("rect", var_rect);
+		var_page_text.Set(i, var_word_rect);
+	}
+	PostPageTextMessage(safeInstance_, pageId, var_page_text);
 }
 
 std::shared_ptr<renderer::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
@@ -73,30 +123,30 @@ std::shared_ptr<renderer::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
 
 void DjVuDecoder::decodeThreadFuntion_() {
 	// TODO (ilia) report errors
-	if (stream_) {
-		if (stream_->getError()) {
-			error_ = "djvu:Error";
-			return;
-		}
+	if (!stream_)
+		return; // TODO (ilia) stream does not exist
+	if (stream_->getError()) {
+		error_ = "djvu:Error";
+		return; // TODO (ilia) error in the stream
+	}
 
-		document_ = std::shared_ptr<ddjvu::File<renderer::Bitmap>>(new ddjvu::File<renderer::Bitmap>(stream_->getPool(), delegateBmpFactory_));
-
-		if (!document_->isDocumentValid()) {
-			error_ = "djvu:Error";
-			return;
-		}
-	} else {
+	document_ = std::shared_ptr<ddjvu::File<renderer::Bitmap>>(new ddjvu::File<renderer::Bitmap>(stream_->getPool(), delegateBmpFactory_));
+	auto document = document_;
+	if (!document)
+		return; // TODO (ilia) document does not exist
+	if (!document->isDocumentValid()) {
 		error_ = "djvu:Error";
 		return;
 	}
 
-	int nPages = document_->getPageNum();
+	int nPages = document->getPageNum();
+	numberOfPages_ = nPages;
 
 	pp::VarArray pageArray;
 	pageArray.SetLength(nPages);
 
 	for (int pageNum = 0; pageNum < nPages; pageNum++){
-		ddjvu_pageinfo_t pageInfo =  document_->getPageInfo(pageNum);
+		ddjvu_pageinfo_t pageInfo =  document->getPageInfo(pageNum);
 
 		// Send page as dictionary
 		pp::VarDictionary page;
@@ -108,7 +158,7 @@ void DjVuDecoder::decodeThreadFuntion_() {
 		pageArray.Set(pageNum, page);
 	}
 
-	PostMessageToInstance(instance_, CreateDictionaryReply(PPB_DECODE_FINISHED, pageArray));
+	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DECODE_FINISHED, pageArray));
 	return;
 
 	//pp::Var var_reply(error_);
@@ -122,7 +172,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	// Check if size is valid
 	if (!size_var.is_dictionary()) {
 		error = pageId + "Error: size is not a dictionary";
-		PostErrorMessage(instance_, error);
+		PostErrorMessage(safeInstance_, error);
 		return;
 	}
 	pp::VarDictionary size(size_var);
@@ -133,7 +183,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		error += " Error: size.height is not an integer value.";
 	if (!error.empty()) {
 		error = pageId + error;
-		PostErrorMessage(instance_, error);
+		PostErrorMessage(safeInstance_, error);
 		return;
 	}
 	valid_size->width = size.Get("width").AsInt();
@@ -149,7 +199,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	} else {
 		if (!frame_var.is_dictionary()) {
 			error = pageId + " Error: frame is not a dictionary";
-			PostErrorMessage(instance_, error);
+			PostErrorMessage(safeInstance_, error);
 			return;
 		}
 		pp::VarDictionary frame(frame_var);
@@ -169,7 +219,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		bottom = frame.Get("bottom").AsInt();
 		if (!error.empty()) {
 			error = pageId + error;
-			PostErrorMessage(instance_, error);
+			PostErrorMessage(safeInstance_, error);
 			return;
 		}
 		width = right - left;
@@ -184,7 +234,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 			error += " Error: frame height is greater than size.height.";
 		if (!error.empty()) {
 			error = pageId + error;
-			PostErrorMessage(instance_, error);
+			PostErrorMessage(safeInstance_, error);
 			return;
 		}
 		valid_frame->left = left;
@@ -192,18 +242,28 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		valid_frame->right = right;
 		valid_frame->bottom = bottom;
 	}
-	pages_[pageId]->size = valid_size;
-	pages_[pageId]->frame = valid_frame;
+	auto page = pages_[pageId];
+	if (!page)
+		return; // TODO (ilia) page does not exist
+	page->size = valid_size;
+	page->frame = valid_frame;
 	
-	pages_[pageId]->bitmap = document_->getPageBitmap(pageNum, valid_size->width, valid_size->height, true)->getBmp();
+	auto document = document_;
+	if (!document)
+		return; // TODO (ilia) document does not exist
+	page->bitmap = document->getPageBitmap(pageNum, valid_size->width, valid_size->height, true)->getBmp();
 	//pp::VarDictionary bitmapAsDict = iBitmap->getBmp()->getAsDictionary();
-	pages_[pageId]->isDecoding = false;
-	PostMessageToInstance(instance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
-	document_->abortPageDecode(pageNum, valid_size->width, valid_size->height, 0);
+	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
+	document->abortPageDecode(pageNum, valid_size->width, valid_size->height, 0);
+	page->isDecoding = true;
 }
 
 void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
-	PostBitmapMessageAsBase64(instance_, pageId, pages_[pageId]->bitmap->getAsBase64Dictionary(pages_[pageId]->frame));
+	auto page = pages_[pageId];
+	if (!page)
+		return; // TODO (ilia) page does not exist
+	PostBitmapMessageAsBase64(safeInstance_, pageId, page->bitmap->getAsBase64Dictionary(page->frame));
+	page->isSending = true;
 }
 
 /*

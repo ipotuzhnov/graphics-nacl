@@ -19,6 +19,7 @@
 
 #include "../helpers/messages.h"
 #include "../helpers/message_helper.h"
+#include "../helpers/safe_instance.h"
 #include "../loader/url_loader_handler.h"
 #include "decoder.h"
 
@@ -33,6 +34,7 @@ class GraphicsInstance: public pp::Instance {
 private:
 	uint32_t color_;
 	pp::Size size_;
+	std::shared_ptr<SafeInstance> safeInstance_;
 	std::shared_ptr<UrlDownloadStream> stream_;
 	std::shared_ptr<DjVuDecoder> decoder_;
 
@@ -56,12 +58,12 @@ private:
 		}
 		// @TODO (ilia) create appropriative error later
 		if (url.empty()) { //@TODO (ilia) return erorr here
-			PostErrorMessage(this, "Can't download file: <docsrc> is empty");
+			PostErrorMessage(safeInstance_, "Can't download file: <docsrc> is empty");
 			return;
 		}
 
 		stream_ = std::make_shared<UrlDownloadStream>();
-		URLLoaderHandler* handler = URLLoaderHandler::Create(this, url, stream_);
+		URLLoaderHandler* handler = URLLoaderHandler::Create(safeInstance_, url, stream_);
 
 		if (handler != NULL) {
 			// Starts asynchronous download. When download is finished or when an
@@ -72,7 +74,7 @@ private:
 	}
 
 	void DecodeStart() {
-		decoder_->startDocumentDecode(this, stream_);
+		decoder_->startDocumentDecode(safeInstance_, stream_);
 	}
 
 	void DecodePage(pp::VarDictionary page) {
@@ -92,12 +94,20 @@ private:
 		decoder_->releasePage(pageId);
 	}
 
+	void GetPageText(pp::VarDictionary page) {
+		decoder_->getPageText(page.Get("pageId").AsString(), page.Get("pageNum").AsInt());
+	}
 
 public:
 	explicit GraphicsInstance(PP_Instance instance)
 		: pp::Instance(instance),
+		safeInstance_(std::make_shared<SafeInstance>(this)),
 		decoder_(std::make_shared<DjVuDecoder>()),
 		size_(0, 0) {}
+
+	~GraphicsInstance() {
+		safeInstance_->isValid = false;
+	}
 
 	virtual bool Init(uint32_t argc, const char* argn[], const char* argv[]) {
 		ParseArgs(argc, argn, argv);
@@ -108,7 +118,7 @@ public:
 	virtual void HandleMessage(const pp::Var& var_message) {		
 		if (!var_message.is_dictionary()) {
 			// @TODO (ilia) create appropriative error later
-			PostErrorMessage(this, "Module doesn't understand this type of messages. Only dictionaries!");
+			PostErrorMessage(safeInstance_, "Module doesn't understand this type of messages. Only dictionaries!");
 			return;
 		}
 
@@ -119,7 +129,7 @@ public:
 
 		// TODO (ilia) check if null by the way
 		if (!dictionary_message.Get("message").is_string()) {
-			PostErrorMessage(this, "Message is not a string");
+			PostErrorMessage(safeInstance_, "Message is not a string");
 			return;
 		}
 
@@ -145,6 +155,10 @@ public:
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error
 			ReleasePage(message_args.AsString());
+		} else if (message == PPD_GET_PAGE_TEXT) {
+			if ( !message_args.is_dictionary() )
+				return; // TODO (ilia) error
+			GetPageText(pp::VarDictionary(message_args));
 		}
 	}
 

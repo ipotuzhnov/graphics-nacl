@@ -189,6 +189,15 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
           this.module.postMessage(message);
         }
         break;
+      case (messages.PPB_SEND_PAGE_TEXT):
+        var id = message_data.args.pageId;
+        if (this.tmp[id] !== undefined) {
+          var pageText = message_data.args.pageText;
+          this.tmp[id].callback(null, pageText);
+          // Clean up
+          this.tmp[id] = undefined;
+        }
+        break;
       // Error handling
       case (messages.PPB_PLUGIN_ERROR):
         console.log(message_data);
@@ -264,6 +273,9 @@ DJVUDecoder.prototype.createNaClModule = function() {
   }
 }
 
+/**
+ * Reurns number of pages in the document.
+ */
 DJVUDecoder.prototype.getNumberOfPages = function() {
   return pages.length;
 }
@@ -312,23 +324,30 @@ DJVUDecoder.prototype.getPage = function(settings, callback) {
 
 /**
  * Get text layer of the page.
+ * @param {Object} settings Dictionary of page's settings
+ *    Settings attributes:
+ *    @property {numeber} pageNumber The number of the page.
+ * @param {function} callback The callback function.
+ *    @param {string} err The error string.
+ *    @param {Object} pageText The array of words in rectangles.
+ *        @property {string} word The word in the rectangle.
+ *        @property {Object} rect The rectangle.
+ *            Rectangle attributes:
+ *            @property {number} left The x coordinate of the top left corner.
+ *            @property {number} top The y coordinate of the top left corner.
+ *            @property {number} right The x coordinate of the bottom right corner.
+ *            @property {number} bottom The y coordinate of the bottom right corner.
  */
-DJVUDecoder.prototype.getText = function(settings, callback) {
-  var x1 = null;
-  var y2 = null;
-  var x2 = null;
-  var y2 = null;
-  if (settings.x1 && settings.y1) {
-    x1 = settings.x1;
-    y1 = settings.y1;
-  }
-  if (settings.x2 && settings.y2) {
-    x2 = settings.x2;
-    y2 = settings.y2;
-  }
-
-  text = '123..'
-  callback(null, text);
+DJVUDecoder.prototype.getPageText = function(settings, callback) {
+  if (!settings) return callback('Page settings object is not defined');
+  if (settings.pageNumber === undefined) return callback('Page settings.pageNumber is not defined');
+  var pageNumber = settings.pageNumber;
+  // Request page's text
+  var id = this.makeUniqueId();
+  this.tmp[id] = { callback: callback };
+  var args = { pageId: id, pageNum: pageNumber };
+  var message = { message: messages.PPD_GET_PAGE_TEXT, args: args };
+  this.module.postMessage(message);
 }
 
 /**

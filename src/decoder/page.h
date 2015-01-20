@@ -18,9 +18,13 @@ public:
 	std::shared_ptr<DjVuSize> size;
 	std::shared_ptr<DjVuFrame> frame;
 
+	// TODO (ilia) remove it later
+	int pageNum;
+
 	DjVuPage() : 
 		isSending(false),
-		isDecoding(true) {}
+		isDecoding(false)
+	{}
 
 	~DjVuPage() {
 		if (decoding_thread.joinable())

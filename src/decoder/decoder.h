@@ -8,6 +8,7 @@
 
 #include "ddjvu/File.h"
 
+#include "../helpers/safe_instance.h"
 #include "../renderer/bitmap.h"
 #include "../loader/url_download_stream.h"
 #include "page.h"
@@ -19,11 +20,12 @@ public:
 	DjVuDecoder();
 	~DjVuDecoder();
 
-	void startDocumentDecode(pp::Instance* instance, std::shared_ptr<UrlDownloadStream> stream);
+	void startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance, std::shared_ptr<UrlDownloadStream> stream);
 	void startPageDecode(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
 	void sendPage(std::string pageId);
 	void sendPageAsBase64(std::string pageId);
 	void releasePage(std::string pageId);
+	void getPageText(std::string pageId, int pageNum);
 	std::shared_ptr<renderer::Bitmap> getPageBmp(std::string pageId);
 private:
 	void decodeThreadFuntion_();
@@ -31,11 +33,13 @@ private:
 	void sendPageThreadFunction_(std::string pageId);
 	//void updateThreadFuntion_();
 
+	std::shared_ptr<SafeInstance> safeInstance_; // Shared pointer
+
 	std::shared_ptr<UrlDownloadStream> stream_;
 	std::shared_ptr<ddjvu::File<renderer::Bitmap>> document_;
 	std::shared_ptr<BmpFactoryDelegate> delegateBmpFactory_;
+	int numberOfPages_;
 
-	pp::Instance* instance_;  // Weak pointer.
 	std::map<std::string, std::shared_ptr<DjVuPage>> pages_;
 	std::string error_;
 
