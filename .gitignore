@@ -1,2 +1,9 @@
 *~
 configure
+.cproject
+.project
+graphics-nacl-decoder.final.pexe
+graphics-nacl-decoder.pexe
+graphics-nacl-decoder-debug.pexe
+graphics-nacl-decoder-debug_x86_32.nexe
+graphics-nacl-decoder-debug_x86_64.nexe
