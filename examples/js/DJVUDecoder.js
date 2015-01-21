@@ -24,6 +24,10 @@ function DJVUDecoder(settings, progress, callback) {
   switch (this.type) {
     case ('pnacl'):
       this.mimetype = 'application/x-pnacl';
+      if (settings.debug !== undefined) {
+        if (settings.debug === true)
+          this.mimetype = 'application/x-nacl';
+      }
       // Set .nmf location for PNaCl plugin
       if (!settings.nmf) return callback('The location of .nmf file is not defined in settings object');
       this.nmf = settings.nmf;
@@ -218,14 +222,14 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
  * This event listener is registered in attachDefaultListeners above.
  */
 DJVUDecoder.prototype.handleCrash = function(event) {
-  if (common.naclModule.exitStatus == -1) {
+  if (this.module.exitStatus == -1) {
     console.log('CRASHED');
   } else {
-    console.log('EXITED [' + common.naclModule.exitStatus + ']');
+    console.log('EXITED [' + this.module.exitStatus + ']');
   }
   if (typeof window.handleCrash !== 'undefined') {
     console.log(event);
-    //window.handleCrash(common.naclModule.lastError);
+    window.handleCrash(this.module.lastError);
   }
 }
 

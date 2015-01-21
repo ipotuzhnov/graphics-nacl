@@ -1,4 +1,5 @@
 NACL_FINALIZE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-finalize
+NACL_TRANSLATE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-translate
 
 CXX=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-clang++
 
@@ -15,7 +16,9 @@ DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/load
 RENDERER_SOURCES=src/renderer/module.cc
 
 #TODO (ilia) don't forget to compress
-all: decoder-final renderer-final
+all: decoder-final
+
+debug: decoder-debug
 
 decoder-final: graphics-nacl-decoder
 	$(NACL_FINALIZE) graphics-nacl-decoder.pexe -o graphics-nacl-decoder.final.pexe
@@ -29,6 +32,13 @@ renderer-final: graphics-nacl-renderer
 graphics-nacl-renderer:
 	$(CXX) $(RENDERER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-renderer.pexe
 
+decoder-debug: graphics-nacl-debug
+	$(NACL_TRANSLATE) --pnacl-allow-exceptions --allow-llvm-bitcode-input graphics-nacl-decoder-debug.pexe -arch x86-32 -o graphics-nacl-decoder-debug_x86_32.nexe
+	$(NACL_TRANSLATE) --pnacl-allow-exceptions --allow-llvm-bitcode-input graphics-nacl-decoder-debug.pexe -arch x86-64 -o graphics-nacl-decoder-debug_x86_64.nexe
+
+graphics-nacl-debug:
+	$(CXX) $(DECODER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) --pnacl-allow-exceptions -g -o graphics-nacl-decoder-debug.pexe
+
 clean:
-	rm -rf graphics-nacl-decoder.pexe graphics-nacl-decoder.final.pexe graphics-nacl-renderer.pexe graphics-nacl-renderer.final.pexe
+	rm -rf graphics-nacl-decoder.pexe graphics-nacl-decoder.final.pexe graphics-nacl-renderer.pexe graphics-nacl-renderer.final.pexe graphics-nacl-decoder-debug.pexe graphics-nacl-decoder-debug_x86_32.nexe graphics-nacl-decoder-debug_x86_64.nexe
 

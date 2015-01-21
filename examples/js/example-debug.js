@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // example
   var type = 'pnacl';
   var url = 'http://172.16.2.112:88/graphics_nacl/1.djvu';
-  var nmf = '/graphics-nacl-git/graphics-nacl-decoder.nmf';
-  var settings = { type: type, url: url, nmf: nmf};
+  var nmf = '/graphics-nacl-git/graphics-nacl-decoder-debug.nmf';
+  var settings = { type: type, url: url, nmf: nmf, debug: true };
   decoder = new DJVUDecoder(
     settings, 
     function(progress) {
