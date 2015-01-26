@@ -54,6 +54,7 @@ function DJVUDecoder(settings, progress, callback) {
   this.attachDefaultListeners();
   // Create NaCl module
   this.createNaClModule();
+  console.log('module constructor finished');
 }
 
 /**
@@ -111,8 +112,14 @@ DJVUDecoder.prototype.attachDefaultListeners = function() {
  * This event listener is registered in attachDefaultListeners above.
  */
 DJVUDecoder.prototype.moduleDidLoad = function() {
+  console.log('load');
   if (this.module === undefined) {
-    this.module = document.getElementById('decoder');
+    var decoderEl = document.getElementById('decoder');
+    if (decoderEl === undefined) { 
+      console.log('decoder el is not defined');
+      return;
+    }
+    this.module = decoderEl
     var message = { message: messages.PPD_DOWNLOAD_START, args: 0 };
     this.module.postMessage(message);
     console.log('NaCl module was successfully loaded');
@@ -121,7 +128,7 @@ DJVUDecoder.prototype.moduleDidLoad = function() {
   }
   
   if (typeof window.moduleDidLoad !== 'undefined') {
-    //window.moduleDidLoad();
+    window.moduleDidLoad();
   }
 }
 
@@ -186,7 +193,7 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
           page.imageData = 'data:image/png;base64,' + page.imageData;
           this.tmp[id].callback(null, page);
           // Clean up
-          this.tmp[id] = undefined;
+          delete this.tmp[id];
         }
         if (this.module != null) {
           var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args.pageId };
@@ -199,7 +206,7 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
           var pageText = message_data.args.pageText;
           this.tmp[id].callback(null, pageText);
           // Clean up
-          this.tmp[id] = undefined;
+          delete this.tmp[id];
         }
         break;
       // Error handling
@@ -238,6 +245,7 @@ DJVUDecoder.prototype.handleCrash = function(event) {
  * named "listener".
  */
 DJVUDecoder.prototype.createNaClModule = function() {
+  console.log('create nacl module');
   var moduleEl = document.createElement('embed');
   moduleEl.setAttribute('id', 'decoder');
   moduleEl.setAttribute('width', 0);
@@ -270,6 +278,7 @@ DJVUDecoder.prototype.createNaClModule = function() {
       moduleEl.readyState = 4;
       moduleEl.dispatchEvent(new CustomEvent('load'));
       moduleEl.dispatchEvent(new CustomEvent('loadend'));
+      console.log('module created');
     }, 100);  // 100 ms
   }
 }

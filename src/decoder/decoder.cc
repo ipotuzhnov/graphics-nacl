@@ -11,14 +11,18 @@ DjVuDecoder::DjVuDecoder()
 }
 
 DjVuDecoder::~DjVuDecoder() {
+	document_->getWindowNotifier()->set(ddjvu::message_window::CLOSE);
 	for (auto it = pages_.begin(); it != pages_.end(); ++it) {
 		//if (it->second->isDecoding) {
-			if (it->second->decoding_thread.joinable())
-				it->second->decoding_thread.join();
+		if (it->second->decoding_thread.joinable()) {
+			//document_->abortPageDecode(it->second->pageNum, it->second->size->width, it->second->size->height, 0);
+			document_->abortPageDecode(it->second->pageId);
+			it->second->decoding_thread.join();
+		}
 		//}
 		//if (it->second->isSending) {
-			if (it->second->sending_thread.joinable())
-				it->second->sending_thread.join();
+		if (it->second->sending_thread.joinable())
+			it->second->sending_thread.join();
 		//}
 	}
 	/*
@@ -38,6 +42,8 @@ void DjVuDecoder::startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance
 }
 
 void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size, pp::Var frame) {
+	std::string out = "Start decoding " + pageId;
+	OutputDebugStringA(out.c_str());
 	//if ( pages_[pageId].first ) {
 	if (pages_.find(pageId) != pages_.end())
 		return; // TODO (ilia) Error: page already exists
@@ -48,6 +54,7 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size,
 	auto page = pages_[pageId];
 	if (!page)
 		return; // TODO (ilia) page does not exist	
+	page->pageId = pageId;
 	page->pageNum = pageNum;
 	page->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
 }
@@ -251,10 +258,20 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	auto document = document_;
 	if (!document)
 		return; // TODO (ilia) document does not exist
-	page->bitmap = document->getPageBitmap(pageNum, valid_size->width, valid_size->height, true)->getBmp();
+	document->getPageBitmap(pageNum, valid_size->width, valid_size->height, true, pageId);
+	if (!document->isBitmapReady(pageId))
+		return; // TODO (ilia) page was aborted
+	auto bitmap = document->getPageBitmap(pageNum, valid_size->width, valid_size->height, true, pageId);
+	// TODO (ilia) page wasn't decoded. May be we should try again or whatever
+	if (!bitmap) {
+		// TODO (ilia) now we will send fake image. Only for testing.
+		page->bitmapStr = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABDklEQVR4nO3TQQrCABAEwTHJ/7+sD1DEOkmg65CDSpCh97E9j+3c3p8fP/zylf7+dq+6diw/unb++y/cR2WBygKVBSoLVBaoLNBYoDMElQUqC1QWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoCjQU6Q1BZoLJAZYHKApUFKgtUFmgs0BmCygKVBSoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoClQUqCzQW6AxBZYHKApUFKgtUFqgsUFmgsUBnCCoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBygKVBRoLdIagskBlgcoClQUqC1QWqCzQWKAzBJUFKgtUFqgsUFngBaRCBIfbWmyRAAAAAElFTkSuQmCC";
+	} else {
+		page->bitmap = bitmap->getBmp();
+	}
 	//pp::VarDictionary bitmapAsDict = iBitmap->getBmp()->getAsDictionary();
 	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
-	document->abortPageDecode(pageNum, valid_size->width, valid_size->height, 0);
+	document->abortPageDecode(pageId);
 	page->isDecoding = true;
 }
 
@@ -262,7 +279,18 @@ void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
 	auto page = pages_[pageId];
 	if (!page)
 		return; // TODO (ilia) page does not exist
-	PostBitmapMessageAsBase64(safeInstance_, pageId, page->bitmap->getAsBase64Dictionary(page->frame));
+	if (page->bitmap) {
+		PostBitmapMessageAsBase64(safeInstance_, pageId, page->bitmap->getAsBase64Dictionary(page->frame));
+	} else {
+		pp::VarDictionary bmp;
+		bmp.Set("bitsPixel", 3);
+		bmp.Set("colors", 0);
+		bmp.Set("width", 100);
+		bmp.Set("height", 100);
+		bmp.Set("rowSize", 300);
+		bmp.Set("imageData", page->bitmapStr);
+		PostBitmapMessageAsBase64(safeInstance_, pageId,bmp);
+	}
 	page->isSending = true;
 }
 

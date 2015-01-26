@@ -50,12 +50,15 @@ var tests = function(decoder) {
     this.numberOfThreads = numberOfThreads;
     this.numberOfPagesToDecode = numberOfPagesToDecode;
     this.decoded = 0;
+    this.pendingPages = {};
   }
   
    AsyncDecoder.prototype.getPage = function(pageNumber, callback) {
     // Create settings for the page
     var size = { width: 100, height: 100 };
     var page_settings = { pageNumber: pageNumber, size: size };
+    var pname = 'p' + pageNumber;
+    this.pendingPages[pname] = 'waiting';
     this.decoder.getPage(page_settings, function(err, page) {
       if (err) throw err;
       // Create image element
@@ -67,6 +70,7 @@ var tests = function(decoder) {
       imageEl.setAttribute('height', page.height);
       // Add image to the body
       document.body.appendChild(imageEl);
+      delete this.pendingPages[pname];
       if (pageNumber == (this.numberOfPagesToDecode - 1)) console.log('decoded the last page');
       callback();
     }.bind(this));
@@ -78,7 +82,12 @@ var tests = function(decoder) {
       var offset = this.decoded;
       for (var i = 0; i < this.numberOfThreads; i++) {
         var pageNumber = offset + i;
-        if (pageNumber > this.numberOfPagesToDecode - 1) return;
+        if (pageNumber > this.numberOfPagesToDecode - 1) { 
+          console.log(this.id);
+          if (tests.asyncDecoders[this.id] === undefined) return;
+          delete tests.asyncDecoders[this.id];
+          return;
+        }
         this.getPage(pageNumber, function() {
           this.decoded++;
           this.getNextPages();
@@ -125,6 +134,7 @@ var tests = function(decoder) {
     testGetPageText: testGetPageText,
     testGetPage: testGetPage,
     testAsyncGetPage: testAsyncGetPage,
-    AsyncDecoder: AsyncDecoder
+    AsyncDecoder: AsyncDecoder,
+    asyncDecoders: asyncDecoders
   }
 }();

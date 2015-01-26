@@ -8,6 +8,7 @@
 
 class DjVuPage {
 public:
+	std::string bitmapStr;
 	std::shared_ptr<renderer::Bitmap> bitmap;
 	bool isSending;
 
@@ -20,6 +21,7 @@ public:
 
 	// TODO (ilia) remove it later
 	int pageNum;
+	std::string pageId;
 
 	DjVuPage() : 
 		isSending(false),

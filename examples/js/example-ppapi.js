@@ -40,6 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
       // Anync page decoding. 
       // 5 pages by itteration.
       tests.testAsyncGetPage(decoder, pages, 5);
+      tests.testAsyncGetPage(decoder, pages, 6);
+      tests.testAsyncGetPage(decoder, pages, 7);
+      tests.testAsyncGetPage(decoder, pages, 8);
+      tests.testAsyncGetPage(decoder, pages, 9);
       // Anync page decoding. 
       // tests.testAsyncGetPage(decoder, pages, 7, 15);
       //tests.testAsyncGetPage(decoder, pages, 5, 15);
