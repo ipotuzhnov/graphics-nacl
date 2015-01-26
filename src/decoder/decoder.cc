@@ -42,8 +42,6 @@ void DjVuDecoder::startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance
 }
 
 void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size, pp::Var frame) {
-	std::string out = "Start decoding " + pageId;
-	OutputDebugStringA(out.c_str());
 	//if ( pages_[pageId].first ) {
 	if (pages_.find(pageId) != pages_.end())
 		return; // TODO (ilia) Error: page already exists
