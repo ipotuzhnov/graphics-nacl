@@ -58,5 +58,13 @@ var messages = {
 
   // Error
   // args: pp::VarDictionary
-  PPB_PLUGIN_ERROR: "PPB_PLUGIN_ERROR"
+  PPB_PLUGIN_ERROR: "PPB_PLUGIN_ERROR",
+  
+  // Log
+  // args = pp::Var.AsStirng()
+  PPB_PLUGIN_LOG: "PPB_PLUGIN_LOG",
+
+  // Stack trace
+  // args = pp::Var.AsStirng() a JSON string defining an exception.
+  PPB_PLUGIN_TRC: "PPB_PLUGIN_TRC"
 };

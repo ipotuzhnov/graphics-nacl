@@ -6,6 +6,7 @@
 #include <utility>
 #include <map>
 #include <sstream>
+#include <thread>
 
 #include "ppapi/cpp/image_data.h"
 #include "ppapi/cpp/input_event.h"
@@ -16,6 +17,7 @@
 #include "ppapi/cpp/var_array.h"
 #include "ppapi/cpp/var_dictionary.h"
 #include "ppapi/utility/completion_callback_factory.h"
+#include "error_handling/error_handling.h"
 
 #include "../helpers/messages.h"
 #include "../helpers/message_helper.h"
@@ -29,6 +31,9 @@
 #pragma warning(disable : 4355)
 #endif
 #undef mbstate_t
+
+// Global instance for error_handling =(
+std::shared_ptr<SafeInstance> g_safeInstance;
 
 class GraphicsInstance: public pp::Instance {
 private:
@@ -47,6 +52,12 @@ private:
 			std::string value = std::string(argv[i]);
 			args_[tag] = value;
 		}
+	}
+
+	static void DumpJson(const char* json) {
+		size_t size = strlen(json) + 1;  // +1 for NULL.
+		std::string out(json, size);
+		PostExceptionMessage(g_safeInstance, out);
 	}
 
 	void DownloadStart() {
@@ -98,12 +109,17 @@ private:
 		decoder_->getPageText(page.Get("pageId").AsString(), page.Get("pageNum").AsInt());
 	}
 
+	void ExceptionHandlingThreadFunction_() {
+	}
+
 public:
 	explicit GraphicsInstance(PP_Instance instance)
 		: pp::Instance(instance),
 		safeInstance_(std::make_shared<SafeInstance>(this)),
 		decoder_(std::make_shared<DjVuDecoder>()),
-		size_(0, 0) {}
+		size_(0, 0) {
+			g_safeInstance = std::make_shared<SafeInstance>(this);
+	}
 
 	~GraphicsInstance() {
 		safeInstance_->isValid = false;
@@ -111,6 +127,18 @@ public:
 
 	virtual bool Init(uint32_t argc, const char* argn[], const char* argv[]) {
 		ParseArgs(argc, argn, argv);
+		PostLogMessage(safeInstance_, "DidCreate.");
+
+		/* Request exception callbacks with JSON. */
+		EHRequestExceptionsJson(DumpJson);
+
+		/* Report back if the request was honored. */
+		if (!EHHanderInstalled()) {
+			PostLogMessage(safeInstance_, "Stack traces not available, so don't expect them.");
+		} else {
+			PostLogMessage(safeInstance_, "Stack traces are on.");
+		}
+		// Start debug thread
 		return true;
 	}
 

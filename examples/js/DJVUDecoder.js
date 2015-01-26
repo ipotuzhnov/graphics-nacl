@@ -47,6 +47,14 @@ function DJVUDecoder(settings, progress, callback) {
   if (settings.scale) {
     this.scale = settings.scale;
   }
+  // Create log element
+  var logEl = document.createElement('div');
+  document.body.appendChild(logEl);
+  this.log = logEl;
+  // Create exception element
+  var exceptionEl = document.createElement('div');
+  document.body.appendChild(exceptionEl);
+  this.exception = exceptionEl;
   // Create event listener
   var listenerEl = document.createElement('div');
   document.body.appendChild(listenerEl);
@@ -81,10 +89,10 @@ DJVUDecoder.prototype.numberOfPages;
 
 /**
  * Dictionary of temporary pages.
- * @property {Object} tmp The dictionary of decoding page.
+ * @property {Object} jobs The dictionary of decoding page.
  *    @property {function} callback The callback function.
  */
-DJVUDecoder.prototype.tmp = {};
+DJVUDecoder.prototype.jobs = {};
 
 /**
  * Add the default "load", "message", "error" and "crash" event listeners to the element with
@@ -178,7 +186,7 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
       // Page rendering
       case (messages.PPR_PAGE_READY):
         var id = message_data.args;
-        if (this.tmp[id] === undefined) {
+        if (this.jobs[id] === undefined) {
           var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args };
           this.module.postMessage(message);
         } else {
@@ -188,12 +196,12 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
         break;
       case (messages.PPB_SEND_PAGE_AS_BASE64):
         var id = message_data.args.pageId;
-        if (this.tmp[id] !== undefined) {
+        if (this.jobs[id] !== undefined) {
           var page = message_data.args.page;
           page.imageData = 'data:image/png;base64,' + page.imageData;
-          this.tmp[id].callback(null, page);
+          this.jobs[id].callback(null, page);
           // Clean up
-          delete this.tmp[id];
+          delete this.jobs[id];
         }
         if (this.module != null) {
           var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args.pageId };
@@ -202,17 +210,29 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
         break;
       case (messages.PPB_SEND_PAGE_TEXT):
         var id = message_data.args.pageId;
-        if (this.tmp[id] !== undefined) {
+        if (this.jobs[id] !== undefined) {
           var pageText = message_data.args.pageText;
-          this.tmp[id].callback(null, pageText);
+          this.jobs[id].callback(null, pageText);
           // Clean up
-          delete this.tmp[id];
+          delete this.jobs[id];
         }
         break;
       // Error handling
       case (messages.PPB_PLUGIN_ERROR):
         console.log(message_data);
         break;
+      // Log handling
+      case (messages.PPB_PLUGIN_LOG):
+        this.log.innerHTML = this.log.innerHTML + message_data.args;
+        break;
+      // Exception handling
+        this.crashed = true;
+        document.getElementById('json').value = message_data.args;
+        crash_info = JSON.parse(message_data.args);
+        //updateStatus('Crash Reported');
+        //src = common.naclModule.getAttribute('path');
+        //fetchMap(src + '/debugging_' + crash_info['arch'] + '.map', crash_info);
+        this.exception.innerHTML = crash_info;
       default:
         console.log('Unhandled message');
         console.log(message_data);
@@ -232,7 +252,9 @@ DJVUDecoder.prototype.handleCrash = function(event) {
   if (this.module.exitStatus == -1) {
     console.log('CRASHED');
   } else {
+    // Reload module and restart all jobs.
     console.log('EXITED [' + this.module.exitStatus + ']');
+    
   }
   if (typeof window.handleCrash !== 'undefined') {
     console.log(event);
@@ -326,9 +348,9 @@ DJVUDecoder.prototype.getPage = function(settings, callback) {
   // Start decoding
   // Generate an id for page
   var id = this.makeUniqueId();
-  this.tmp[id] = { callback: callback };
   var args = { pageId: id, pageNum: pageNumber, size: size, frame: frame };
   var message = { message: messages.PPD_DECODE_PAGE, args: args };
+  this.jobs[id] = { message: message, callback: callback };
   this.module.postMessage(message);
 }
 
@@ -354,9 +376,9 @@ DJVUDecoder.prototype.getPageText = function(settings, callback) {
   var pageNumber = settings.pageNumber;
   // Request page's text
   var id = this.makeUniqueId();
-  this.tmp[id] = { callback: callback };
   var args = { pageId: id, pageNum: pageNumber };
   var message = { message: messages.PPD_GET_PAGE_TEXT, args: args };
+  this.jobs[id] = { message: message, callback: callback };
   this.module.postMessage(message);
 }
 
@@ -371,7 +393,7 @@ DJVUDecoder.prototype.makeUniqueId = function() {
     res += possible.charAt(Math.floor(Math.random() * possible.length));
     
   // Check if id is unique
-  if (this.tmp[res] !== undefined)
+  if (this.jobs[res] !== undefined)
     this.makeUniqueId();
   return res;
 }

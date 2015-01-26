@@ -69,6 +69,14 @@ namespace {
 	// args = pp::VarDictionary
 	const char* const PPB_PLUGIN_ERROR = "PPB_PLUGIN_ERROR";
 
+	// Log
+	// args = pp::Var.AsStirng()
+	const char* const PPB_PLUGIN_LOG = "PPB_PLUGIN_LOG";
+
+	// Stack trace
+	// args = pp::Var.AsStirng() a JSON string defining an exception.
+	const char* const PPB_PLUGIN_TRC = "PPB_PLUGIN_TRC";
+
 } // namespace
 
 #endif //GRAPHICS_NACL_MESSAGES_H_
