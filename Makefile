@@ -3,7 +3,7 @@ NACL_TRANSLATE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-translate
 
 CXX=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-clang++
 
-CXXINCLUDE=-I $(NACL_SDK_ROOT)/include -I $(DJVULIBRE_ROOT)/libdjvu -I $(DDJVU_ROOT)
+CXXINCLUDE=-I $(NACL_SDK_ROOT)/include -I $(DJVULIBRE_ROOT)/libdjvu -I $(DDJVU_ROOT)/src
 CXXFLAGS=-std=gnu++11 $(CXXINCLUDE)
 
 LDFLAGS=-L $(NACL_SDK_ROOT)/lib/pnacl/Release/ -L $(DJVULIBRE_ROOT)/libdjvu/.libs
