@@ -72,7 +72,7 @@ var tests = function(decoder) {
       document.body.appendChild(imageEl);
       delete this.pendingPages[pname];
       if (pageNumber == (this.numberOfPagesToDecode - 1)) console.log('decoded the last page');
-      callback();
+      callback(pageNumber);
     }.bind(this));
   }
 
@@ -83,14 +83,16 @@ var tests = function(decoder) {
       for (var i = 0; i < this.numberOfThreads; i++) {
         var pageNumber = offset + i;
         if (pageNumber > this.numberOfPagesToDecode - 1) { 
-          console.log(this.id);
+          console.log('stop decoding' + this.id);
           if (tests.asyncDecoders[this.id] === undefined) return;
           delete tests.asyncDecoders[this.id];
           return;
         }
-        this.getPage(pageNumber, function() {
+        console.log(this.id +' start ' + pageNumber)
+        this.getPage(pageNumber, function(decodedPageNumber) {
+          console.log(this.id + ' decoded page ' + decodedPageNumber);
           this.decoded++;
-          this.getNextPages();
+          if (this.decoded % this.numberOfThreads === 0) this.getNextPages();
         }.bind(this));
       }
     }
@@ -109,7 +111,7 @@ var tests = function(decoder) {
     // Create new asynchronous decoder
     var id = makeUniqueId();
     var asyncDecoder = new AsyncDecoder(id, decoder, pages, numberOfThreads, numberOfPagesToDecode);
-    asyncDecoders[id] = { asyncDecoder: asyncDecoder };
+    tests.asyncDecoders[id] = { asyncDecoder: asyncDecoder };
     asyncDecoder.getPagesAsync();
   }
   

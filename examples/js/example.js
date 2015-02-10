@@ -15,7 +15,7 @@ function updateStatus(opt_message) {
 document.addEventListener('DOMContentLoaded', function() {
   // example
   var type = 'pnacl';
-  var url = 'http://172.16.2.112:88/graphics_nacl/1.djvu';
+  var url = 'http://172.16.2.114:88/graphics_nacl/1.djvu';
   var nmf = '/graphics-nacl-git/graphics-nacl-decoder.nmf';
   var settings = { type: type, url: url, nmf: nmf};
   decoder = new DJVUDecoder(
@@ -39,7 +39,14 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Anync page decoding. 
       // 5 pages by itteration.
+      tests.testAsyncGetPage(decoder, pages, 1);
+
       tests.testAsyncGetPage(decoder, pages, 5);
+      tests.testAsyncGetPage(decoder, pages, 6);
+      tests.testAsyncGetPage(decoder, pages, 7);
+      tests.testAsyncGetPage(decoder, pages, 8);
+      tests.testAsyncGetPage(decoder, pages, 9);
+
       // Anync page decoding. 
       // tests.testAsyncGetPage(decoder, pages, 7, 15);
       //tests.testAsyncGetPage(decoder, pages, 5, 15);

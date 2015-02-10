@@ -130,15 +130,16 @@ public:
 		PostLogMessage(safeInstance_, "DidCreate.");
 
 		/* Request exception callbacks with JSON. */
-		EHRequestExceptionsJson(DumpJson);
+		//EHRequestExceptionsJson(DumpJson);
 
 		/* Report back if the request was honored. */
+		/*
 		if (!EHHanderInstalled()) {
 			PostLogMessage(safeInstance_, "Stack traces not available, so don't expect them.");
 		} else {
 			PostLogMessage(safeInstance_, "Stack traces are on.");
 		}
-		// Start debug thread
+		*/
 		return true;
 	}
 
@@ -168,17 +169,21 @@ public:
 		} else if (message == PPD_DECODE_START) {
 			DecodeStart();
 		} else if (message == PPD_DECODE_PAGE) {
+			PostLogMessage(safeInstance_, "LOG: before module::DecodePage()");
 			if ( ! message_args.is_dictionary() )
 				return; // TODO (ilia) error
 			DecodePage(pp::VarDictionary(message_args));
+			PostLogMessage(safeInstance_, "LOG: after module::DecodePage()");
 		} else if (message == PPD_GET_PAGE) {
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error
 			SendPage(message_args.AsString());
 		} else if (message == PPD_GET_PAGE_AS_BASE64) {
+			PostLogMessage(safeInstance_, "LOG: before module::SendPageAsBase64()");
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error
 			SendPageAsBase64(message_args.AsString());
+			PostLogMessage(safeInstance_, "LOG: after module::SendPageAsBase64()");
 		} else if (message == PPD_RELEASE_PAGE) {
 			if ( !message_args.is_string() )
 				return; // TODO (ilia) error

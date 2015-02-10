@@ -29,10 +29,12 @@ public:
 	{}
 
 	~DjVuPage() {
+		/* Don't join threads cause we may join in the same thread.
 		if (decoding_thread.joinable())
 			decoding_thread.join();
 		if (sending_thread.joinable())
 			sending_thread.join();
+			*/
 	}
 		/*
 	BITMAP: renderer::Bitmap

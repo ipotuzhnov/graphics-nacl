@@ -17,6 +17,7 @@
 function DJVUDecoder(settings, progress, callback) {
   this.progress = progress;
   this.callback = callback;
+  this.reloading = false;
   if (!settings) return callback('Settings object is not defined');
   // Set plugin mimetype
   if (!settings.type) return callback('Type is not defined in settings object');
@@ -181,7 +182,7 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
       // Document decoding
       case (messages.PPB_DECODE_FINISHED):
         this.pages = message_data.args;
-        this.callback(null, this.pages);
+        if (!this.reloading) this.callback(null, this.pages);
         break;
       // Page rendering
       case (messages.PPR_PAGE_READY):
@@ -223,7 +224,8 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
         break;
       // Log handling
       case (messages.PPB_PLUGIN_LOG):
-        this.log.innerHTML = this.log.innerHTML + message_data.args;
+        //console.log(message_data.args);
+        //this.log.innerHTML = this.log.innerHTML + message_data.args;
         break;
       // Exception handling
         this.crashed = true;
@@ -254,7 +256,18 @@ DJVUDecoder.prototype.handleCrash = function(event) {
   } else {
     // Reload module and restart all jobs.
     console.log('EXITED [' + this.module.exitStatus + ']');
-    
+    /*
+    this.reloading = true;
+    if (this.module !== undefined) {
+      var l = this.listener;
+      this.listener.removeChild(this.module);
+      this.module = undefined;
+    }
+    this.createNaClModule();
+    for (var job in this.jobs) {
+      this.module.postMessage(job.message);
+    }
+    */
   }
   if (typeof window.handleCrash !== 'undefined') {
     console.log(event);

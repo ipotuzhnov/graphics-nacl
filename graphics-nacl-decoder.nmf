@@ -3,7 +3,12 @@
     "portable": {
       "pnacl-translate": {
         "url": "graphics-nacl-decoder.final.pexe"
+      },
+      "pnacl-debug": {
+        "url": "graphics-nacl-decoder-debug.bc",
+        "optlevel": 0
       }
     }
   }
 }
+
