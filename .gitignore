@@ -3,6 +3,7 @@ configure
 .cproject
 .project
 .settings/
+graphics-nacl-decoder.release.pexe
 graphics-nacl-decoder.final.pexe
 graphics-nacl-decoder.pexe
 graphics-nacl-decoder-debug.pexe

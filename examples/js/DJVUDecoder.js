@@ -9,10 +9,8 @@
  *    @property {string} url The url where .djvu document can be found.
  *    Optional attributes:
  *    @property {string} nmf The url where .nmf file can be found. PNaCl only.
- *    @property {number} scale The scale of decoded pages. Default value is 1.0
  * @param {function} progress Downloading progress notification callback.
  * @param {function} callback Error callback.
- * TODO (ilia) scale's never used.
  */
 function DJVUDecoder(settings, progress, callback) {
   this.progress = progress;
@@ -44,10 +42,6 @@ function DJVUDecoder(settings, progress, callback) {
   // Set document url
   if (!settings.url) return callback('Url is not defined in settings object');
   this.url = settings.url;
-  // Set scale
-  if (settings.scale) {
-    this.scale = settings.scale;
-  }
   // Create log element
   var logEl = document.createElement('div');
   document.body.appendChild(logEl);
@@ -67,11 +61,6 @@ function DJVUDecoder(settings, progress, callback) {
 }
 
 /**
- * @property {number} scale The scale in which document is decoded.
- */
-DJVUDecoder.prototype.scale = 1.0;
-
-/**
  * Dictionary of decoded pages
  * @property {Object} pages.
  *    Page object structure:
@@ -81,12 +70,6 @@ DJVUDecoder.prototype.scale = 1.0;
  * TODO (ilia) change visibility to private.
  */
 DJVUDecoder.prototype.pages = {};
-
-/**
- * Number of pages in the decoded document.
- * @property {number} numberOfPages.
- */
-DJVUDecoder.prototype.numberOfPages;
 
 /**
  * Dictionary of temporary pages.
@@ -319,15 +302,8 @@ DJVUDecoder.prototype.createNaClModule = function() {
 }
 
 /**
- * Reurns number of pages in the document.
- */
-DJVUDecoder.prototype.getNumberOfPages = function() {
-  return pages.length;
-}
-
-/**
- * Get the page as base64 string. Callback used to retern decoded page.
- * If frame is not set then all page is decoded and sent back through 
+ * Request page as base64 string. Callback reterns decoded page.
+ * If frame is not set then page is decoded in full size and sent back through 
  * callback function. In other case method returns part of the page 
  * that specified by frame.
  * @param {Object} settings Dictionary of page's settings
@@ -368,7 +344,7 @@ DJVUDecoder.prototype.getPage = function(settings, callback) {
 }
 
 /**
- * Get text layer of the page.
+ * Request text layer of the page.
  * @param {Object} settings Dictionary of page's settings
  *    Settings attributes:
  *    @property {numeber} pageNumber The number of the page.
