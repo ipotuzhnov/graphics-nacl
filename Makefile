@@ -3,7 +3,7 @@ NACL_TRANSLATE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-translate
 
 CXX=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-clang++
 
-CXXINCLUDE=-I $(NACL_SDK_ROOT)/include/pnacl -I $(NACL_SDK_ROOT)/include -I $(DJVULIBRE_ROOT) -I $(DJVULIBRE_ROOT)/libdjvu -I $(DDJVU_ROOT)/src -I /home/ilia/Documents/nginx-1.7.8/html/graphics-nacl-git
+CXXINCLUDE=-I $(NACL_SDK_ROOT)/include -I $(DJVULIBRE_ROOT)/libdjvu -I $(DDJVU_ROOT)/src
 CXXFLAGS=-std=gnu++11 $(CXXINCLUDE)
 
 LDFLAGS=-L $(NACL_SDK_ROOT)/lib/pnacl/Release/ -L $(DJVULIBRE_ROOT)/libdjvu/.libs
