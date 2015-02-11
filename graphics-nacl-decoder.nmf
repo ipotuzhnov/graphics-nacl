@@ -2,7 +2,7 @@
   "program": {
     "portable": {
       "pnacl-translate": {
-        "url": "graphics-nacl-decoder.final.pexe"
+        "url": "graphics-nacl-decoder.release.pexe"
       },
       "pnacl-debug": {
         "url": "graphics-nacl-decoder-debug.bc",

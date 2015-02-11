@@ -1,5 +1,6 @@
 NACL_FINALIZE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-finalize
 NACL_TRANSLATE=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-translate
+NACL_COMPRESS=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-compress
 
 CXX=$(NACL_SDK_ROOT)/toolchain/linux_pnacl/bin/pnacl-clang++
 
@@ -14,24 +15,19 @@ CXXCPP=-D HAVE_CONFIG_H -D THREADMODEL=POSIXTHREADS -D NDEBUG
 
 DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc src/base64/base64.cc
 
-RENDERER_SOURCES=src/renderer/module.cc
-
 #TODO (ilia) don't forget to compress
-all: decoder-final
+all: decoder-compress
 
 debug: decoder-debug
+
+decoder-compress: decoder-final
+	$(NACL_COMPRESS) graphics-nacl-decoder.final.pexe -o graphics-nacl-decoder.release.pexe
 
 decoder-final: graphics-nacl-decoder
 	$(NACL_FINALIZE) graphics-nacl-decoder.pexe -o graphics-nacl-decoder.final.pexe
 
 graphics-nacl-decoder:
-	$(CXX) $(DECODER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-decoder.pexe
-
-renderer-final: graphics-nacl-renderer
-	$(NACL_FINALIZE) graphics-nacl-renderer.pexe -o graphics-nacl-renderer.final.pexe
-
-graphics-nacl-renderer:
-	$(CXX) $(RENDERER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-renderer.pexe
+	$(CXX) -O2 $(DECODER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o graphics-nacl-decoder.pexe
 
 decoder-debug: graphics-nacl-debug
 	$(NACL_TRANSLATE) --allow-llvm-bitcode-input graphics-nacl-decoder-debug.pexe -arch x86-32 -o graphics-nacl-decoder-debug_x86_32.nexe
