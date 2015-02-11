@@ -3,7 +3,7 @@ graphics-nacl
 INSTALL 
 1.1 Download ddjvu (https://github.com/ipotuzhnov/ddjvu.git)
 export DDJVU_ROOT=<ddjvu_dir>
-1.2 Install nacl-djvulibre (https://github.com/ipotuzhnov/nacl-djvulibre-3.5.35.git) follow README_NaCl instructions.
+1.2 Install nacl-djvulibre (https://github.com/ipotuzhnov/nacl-djvulibre-3.5.25.git) follow README_NaCl instructions.
 export DJVULIBRE_ROOT=<nacl_djvulibre_dir>
 1.3 Install libpng
 ./src/bin/naclports install libpng --toolchain=pnacl --arch=pnacl

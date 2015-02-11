@@ -4,6 +4,8 @@ var tests = function(decoder) {
     decoded: 0,
     length: 0
   };
+  var startTime;
+  var stopTime;
 
   function testGetPageText(decoder) {
     if (decoder === undefined) throw 'decoder is not defined';
@@ -71,7 +73,11 @@ var tests = function(decoder) {
       // Add image to the body
       document.body.appendChild(imageEl);
       delete this.pendingPages[pname];
-      if (pageNumber == (this.numberOfPagesToDecode - 1)) console.log('decoded the last page ' + document.getElementsByTagName('*').length);
+      if (pageNumber == (this.numberOfPagesToDecode - 1)) {
+        tests.stopTime = new Date();
+        var elapsed = tests.stopTime - tests.startTime;
+        console.log('decoded the last page ' + document.getElementsByTagName('*').length + ' in ' + elapsed / 1000 + ' seconds');
+      }
       callback(pageNumber);
     }.bind(this));
   }
@@ -103,6 +109,8 @@ var tests = function(decoder) {
   }
 
   function testAsyncGetPage(decoder, pages, numberOfThreads, numberOfPagesToDecode) {
+    tests.startTime = new Date();
+
     if (decoder === undefined) throw 'decoder is not defined';
     if (pages.length <= 0) throw 'Pages array is empty';
     if (numberOfPagesToDecode === undefined) numberOfPagesToDecode = pages.length;
