@@ -33,7 +33,7 @@ namespace {
 
 	// Page is decoded
 	// args = pageId
-	const char* const PPR_PAGE_READY = "PPR_PAGE_READY";
+	const char* const PPB_PAGE_READY = "PPB_PAGE_READY";
 	// Request page
 	// args = pp::VarDictionary
 	const char* const PPD_GET_PAGE = "PPD_GET_PAGE";

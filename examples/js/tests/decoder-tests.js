@@ -71,7 +71,7 @@ var tests = function(decoder) {
       // Add image to the body
       document.body.appendChild(imageEl);
       delete this.pendingPages[pname];
-      if (pageNumber == (this.numberOfPagesToDecode - 1)) console.log('decoded the last page');
+      if (pageNumber == (this.numberOfPagesToDecode - 1)) console.log('decoded the last page ' + document.getElementsByTagName('*').length);
       callback(pageNumber);
     }.bind(this));
   }
@@ -129,8 +129,7 @@ var tests = function(decoder) {
     //if (this.tmp[res] !== undefined)
     //  this.makeUniqueId();
     return res;
-  }
-  
+  }  
   
   return {
     testGetPageText: testGetPageText,

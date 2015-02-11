@@ -153,7 +153,7 @@ public:
 		}
 
 		std::string message = dictionary_message.Get("message").AsString();
-		if (message == PPR_PAGE_READY) {
+		if (message == PPB_PAGE_READY) {
 			if ( ! isReceiving_ ) {
 				isReceiving_ = true;
 				PostMessage(CreateDictionaryReply(PPD_GET_PAGE, dictionary_message.Get("args")));

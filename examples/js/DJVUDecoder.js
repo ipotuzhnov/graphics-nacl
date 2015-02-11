@@ -185,7 +185,7 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
         if (!this.reloading) this.callback(null, this.pages);
         break;
       // Page rendering
-      case (messages.PPR_PAGE_READY):
+      case (messages.PPB_PAGE_READY):
         var id = message_data.args;
         if (this.jobs[id] === undefined) {
           var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args };

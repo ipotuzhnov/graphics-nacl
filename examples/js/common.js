@@ -373,7 +373,7 @@ var common = (function() {
           onDocumentDecodeed(common.pages);
           break;
         // Page rendering
-        case (messages.PPR_PAGE_READY):
+        case (messages.PPB_PAGE_READY):
           var element = document.getElementById(message_data.args);
           if (element == null) {
             var message = { message: messages.PPD_RELEASE_PAGE, args: message_data.args };
@@ -385,7 +385,7 @@ var common = (function() {
               common.decoder.postMessage(message);
             }
             if (type == "EMBED") {
-              var message = { message: messages.PPR_PAGE_READY, args: message_data.args };
+              var message = { message: messages.PPB_PAGE_READY, args: message_data.args };
               renderer.postMessage(message);
             }
           }

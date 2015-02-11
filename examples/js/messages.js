@@ -24,7 +24,7 @@ var messages = {
   
   // Page is decoded
   // args: pageId
-  PPR_PAGE_READY: "PPR_PAGE_READY",
+  PPB_PAGE_READY: "PPB_PAGE_READY",
   // Request page
   // Request page pp::VarDictionary
   PPD_GET_PAGE: "PPD_GET_PAGE",

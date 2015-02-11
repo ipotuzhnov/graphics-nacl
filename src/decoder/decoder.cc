@@ -296,7 +296,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		page->bitmap = bitmap->getBmp();
 	}
 	//pp::VarDictionary bitmapAsDict = iBitmap->getBmp()->getAsDictionary();
-	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPR_PAGE_READY, pageId));
+	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_PAGE_READY, pageId));
 	//document->abortPageDecode(pageId);
 	page->isDecoding = true;
 }
