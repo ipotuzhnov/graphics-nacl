@@ -17,4 +17,10 @@ gclient sync
 export DDJVU_ROOT=<ddjvu_dir>
 1.4 Install nacl-djvulibre (https://github.com/ipotuzhnov/nacl-djvulibre-3.5.35.git) follow README_NaCl instructions.
 export DJVULIBRE_ROOT=<nacl_djvulibre_dir>
-2. Run make
+2. Run nacl-env nacl-make
+
+DEBUGGING
+1. Useful links
+Debugging via Eclipse 
+1.1 http://digilancer.com/?p=34
+1.2 http://www.chromium.org/nativeclient/how-tos/debugging-documentation/debugging-with-debug-stub-recommended/debugging-nacl-apps-in-eclipse-cdt
