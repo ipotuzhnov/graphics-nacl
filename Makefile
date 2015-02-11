@@ -15,7 +15,6 @@ CXXCPP=-D HAVE_CONFIG_H -D THREADMODEL=POSIXTHREADS -D NDEBUG
 
 DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc src/base64/base64.cc
 
-#TODO (ilia) don't forget to compress
 all: decoder-compress
 
 debug: decoder-debug
