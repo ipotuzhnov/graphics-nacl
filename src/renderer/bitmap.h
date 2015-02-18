@@ -22,17 +22,19 @@
 #include "ppapi/cpp/instance.h"
 
 namespace {
-struct DjVuSize {
-	int width;
-	int height;
-};
 
-struct DjVuFrame {
-	int left;
-	int top;
-	int right;
-	int bottom;
-};
+	struct DjVuSize {
+		int width;
+		int height;
+	};
+
+	struct DjVuFrame {
+		int left;
+		int top;
+		int right;
+		int bottom;
+	};
+
 }
 
 namespace renderer {
