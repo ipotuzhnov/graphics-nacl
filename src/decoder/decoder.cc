@@ -15,22 +15,13 @@ DjVuDecoder::DjVuDecoder()
 DjVuDecoder::~DjVuDecoder() {
 	document_->stopMessageHandling();
 	for (auto it = pages_.begin(); it != pages_.end(); ++it) {
-		//if (it->second->isDecoding) {
-		if (it->second->decoding_thread.joinable()) {
-			//document_->abortPageDecode(it->second->pageNum, it->second->size->width, it->second->size->height, 0);
-			//document_->abortPageDecode(it->second->pageId);
+		if (it->second->decoding_thread.joinable())
 			it->second->decoding_thread.join();
-		}
-		//}
-		//if (it->second->isSending) {
+
 		if (it->second->sending_thread.joinable())
 			it->second->sending_thread.join();
-		//}
 	}
-	/*
-	if (updateThread_.joinable())
-		updateThread_.join();
-	*/
+
 	if (decodeThread_.joinable())
 		decodeThread_.join();
 }
@@ -44,7 +35,6 @@ void DjVuDecoder::startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance
 }
 
 void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size, pp::Var frame) {
-	//if ( pages_[pageId].first ) {
 	if (pages_.find(pageId) != pages_.end())
 		return PostErrorMessage(safeInstance_, "Page with id " + pageId + " already exists.");
 
