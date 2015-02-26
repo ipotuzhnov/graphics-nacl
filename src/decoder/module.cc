@@ -37,7 +37,6 @@ std::shared_ptr<SafeInstance> g_safeInstance;
 
 class GraphicsInstance: public pp::Instance {
 private:
-	uint32_t color_;
 	pp::Size size_;
 	std::shared_ptr<SafeInstance> safeInstance_;
 	std::shared_ptr<UrlDownloadStream> stream_;
@@ -54,12 +53,6 @@ private:
 		}
 	}
 
-	static void DumpJson(const char* json) {
-		size_t size = strlen(json) + 1;  // +1 for NULL.
-		std::string out(json, size);
-		PostExceptionMessage(g_safeInstance, out);
-	}
-
 	void DownloadStart() {
 		std::string url;
 		for (auto it = args_.begin(); it != args_.end(); ++it) {
@@ -67,11 +60,9 @@ private:
 				url = it->second;
 			}
 		}
-		// @TODO (ilia) create appropriative error later
-		if (url.empty()) { //@TODO (ilia) return erorr here
-			PostErrorMessage(safeInstance_, "Can't download file: <docsrc> is empty");
-			return;
-		}
+
+		if (url.empty())
+			return PostErrorMessage(safeInstance_, "Can't download file: <docsrc> is not set");
 
 		stream_ = std::make_shared<UrlDownloadStream>();
 		URLLoaderHandler* handler = URLLoaderHandler::Create(safeInstance_, url, stream_);
@@ -90,7 +81,6 @@ private:
 
 	void DecodePage(pp::VarDictionary page) {
 		decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), page.Get("size"), page.Get("frame"));
-		//decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), pp::VarDictionary(page.Get("size")), pp::VarDictionary(page.Get("frame")));
 	}
 
 	void SendPage(std::string pageId) {
@@ -127,40 +117,20 @@ public:
 
 	virtual bool Init(uint32_t argc, const char* argn[], const char* argv[]) {
 		ParseArgs(argc, argn, argv);
-		PostLogMessage(safeInstance_, "DidCreate.");
 
-		/* Request exception callbacks with JSON. */
-		//EHRequestExceptionsJson(DumpJson);
-
-		/* Report back if the request was honored. */
-		/*
-		if (!EHHanderInstalled()) {
-			PostLogMessage(safeInstance_, "Stack traces not available, so don't expect them.");
-		} else {
-			PostLogMessage(safeInstance_, "Stack traces are on.");
-		}
-		*/
 		return true;
 	}
 
 	// Handle message from JavaScript
-	virtual void HandleMessage(const pp::Var& var_message) {		
-		if (!var_message.is_dictionary()) {
-			// @TODO (ilia) create appropriative error later
-			PostErrorMessage(safeInstance_, "Module doesn't understand this type of messages. Only dictionaries!");
-			return;
-		}
+	virtual void HandleMessage(const pp::Var& var_message) {
+		if (!var_message.is_dictionary())
+			return PostErrorMessage(safeInstance_, "Module doesn't understand this type of messages. Only dictionaries!");
 
 		pp::VarDictionary dictionary_message(var_message);
-		// @TODO (ilia) create appropriative error later
-		//if ( ! IsMessageValid(dictionary_message) )
-		//	return;
 
 		// TODO (ilia) check if null by the way
-		if (!dictionary_message.Get("message").is_string()) {
-			PostErrorMessage(safeInstance_, "Message is not a string");
-			return;
-		}
+		if (!dictionary_message.Get("message").is_string())
+			return PostErrorMessage(safeInstance_, "Message is not a string");
 
 		std::string message = dictionary_message.Get("message").AsString();
 		pp::Var message_args = dictionary_message.Get("args");
@@ -169,28 +139,29 @@ public:
 		} else if (message == PPD_DECODE_START) {
 			DecodeStart();
 		} else if (message == PPD_DECODE_PAGE) {
-			PostLogMessage(safeInstance_, "LOG: before module::DecodePage()");
 			if ( ! message_args.is_dictionary() )
-				return; // TODO (ilia) error
+				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a dictionary");
+
 			DecodePage(pp::VarDictionary(message_args));
-			PostLogMessage(safeInstance_, "LOG: after module::DecodePage()");
 		} else if (message == PPD_GET_PAGE) {
 			if ( !message_args.is_string() )
-				return; // TODO (ilia) error
+				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");
+
 			SendPage(message_args.AsString());
 		} else if (message == PPD_GET_PAGE_AS_BASE64) {
-			PostLogMessage(safeInstance_, "LOG: before module::SendPageAsBase64()");
 			if ( !message_args.is_string() )
-				return; // TODO (ilia) error
+				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");
+
 			SendPageAsBase64(message_args.AsString());
-			PostLogMessage(safeInstance_, "LOG: after module::SendPageAsBase64()");
 		} else if (message == PPD_RELEASE_PAGE) {
 			if ( !message_args.is_string() )
-				return; // TODO (ilia) error
+				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");
+
 			ReleasePage(message_args.AsString());
 		} else if (message == PPD_GET_PAGE_TEXT) {
 			if ( !message_args.is_dictionary() )
-				return; // TODO (ilia) error
+				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");
+
 			GetPageText(pp::VarDictionary(message_args));
 		}
 	}
