@@ -53,7 +53,7 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size,
 	pages_[pageId] = std::make_shared<DjVuPage>();
 	auto page = pages_[pageId];
 	if (!page)
-		return; // TODO (ilia) page does not exist	
+		return; // TODO (ilia) page does not exist
 	page->pageId = pageId;
 	page->pageNum = pageNum;
 	page->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
@@ -89,6 +89,7 @@ void DjVuDecoder::releasePage(std::string pageId) {
 		page->decoding_thread.join();
 	if (page->sending_thread.joinable())
 		page->sending_thread.join();
+	document_->removePage(pageId);
 	pages_.erase(pageId);
 }
 
@@ -101,7 +102,7 @@ void DjVuDecoder::getPageText(std::string pageId, int pageNum) {
 	std::vector<ddjvu::Text> pageText = document->getPageText(pageNum);
 	pp::VarArray var_page_text;
 	var_page_text.SetLength(pageText.size());
-	for (int i = 0; i < pageText.size(); i++) {		
+	for (int i = 0; i < pageText.size(); i++) {
 		// Word
 		std::wstring w_word = pageText[i].getWord();
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
@@ -125,12 +126,12 @@ void DjVuDecoder::getPageText(std::string pageId, int pageNum) {
 
 std::shared_ptr<renderer::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
 	//auto first = pages_[pageId].first;
-	
+
 	if (pages_.find(pageId) != pages_.end()) {
 		return pages_[pageId]->bitmap;
 	} else {
 		return nullptr;
-	} 
+	}
 }
 
 void DjVuDecoder::decodeThreadFuntion_() {
@@ -201,7 +202,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	}
 	valid_size->width = size.Get("width").AsInt();
 	valid_size->height = size.Get("height").AsInt();
-	
+
 	// Check if frame is null
 	std::shared_ptr<DjVuFrame> valid_frame = std::make_shared<DjVuFrame>();
 	if (frame_var.is_null()) {
@@ -267,7 +268,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	}
 	page->size = valid_size;
 	page->frame = valid_frame;
-	
+
 	auto document = document_;
 	if (!document) {
 		std::string logmsg = "LOG: document does not exist " + pageId;
