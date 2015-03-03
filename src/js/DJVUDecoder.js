@@ -1,7 +1,7 @@
 /**
  * Wrapper class for decoding DjVu documents.
- * 
- * @class {DJVUDecoder} 
+ *
+ * @class {DJVUDecoder}
  * @constructor {DJVUDecoder}
  * @param {Object} settings Dictionary of settings to set on the decoder.
  *    Settings attributes:
@@ -42,10 +42,6 @@ function DJVUDecoder(settings, progress, callback) {
   // Set document url
   if (!settings.url) return callback('Url is not defined in settings object');
   this.url = settings.url;
-  // Create log element
-  var logEl = document.createElement('div');
-  document.body.appendChild(logEl);
-  this.log = logEl;
   // Create exception element
   var exceptionEl = document.createElement('div');
   document.body.appendChild(exceptionEl);
@@ -57,7 +53,6 @@ function DJVUDecoder(settings, progress, callback) {
   this.attachDefaultListeners();
   // Create NaCl module
   this.createNaClModule();
-  console.log('module constructor finished');
 }
 
 /**
@@ -88,7 +83,7 @@ DJVUDecoder.prototype.jobs = {};
  * C++).
  */
 DJVUDecoder.prototype.attachDefaultListeners = function() {
-  // Bind all callbacks with this 
+  // Bind all callbacks with this
   this.listener.addEventListener('load', this.moduleDidLoad.bind(this), true);
   this.listener.addEventListener('message', this.handleMessage.bind(this), true);
   this.listener.addEventListener('error', this.handleError.bind(this), true);
@@ -104,21 +99,16 @@ DJVUDecoder.prototype.attachDefaultListeners = function() {
  * This event listener is registered in attachDefaultListeners above.
  */
 DJVUDecoder.prototype.moduleDidLoad = function() {
-  console.log('load');
   if (this.module === undefined) {
     var decoderEl = document.getElementById('decoder');
-    if (decoderEl === undefined) { 
-      console.log('decoder el is not defined');
-      return;
+    if (decoderEl === undefined) {
+      return this.callback(new Error('Decoder element is not defined.'));
     }
     this.module = decoderEl
     var message = { message: messages.PPD_DOWNLOAD_START, args: 0 };
     this.module.postMessage(message);
-    console.log('NaCl module was successfully loaded');
-  } else {
-    console.log('this.module is already set');
   }
-  
+
   if (typeof window.moduleDidLoad !== 'undefined') {
     window.moduleDidLoad();
   }
@@ -130,12 +120,11 @@ DJVUDecoder.prototype.moduleDidLoad = function() {
  * This event listener is registered in createNaClModule above.
  */
 DJVUDecoder.prototype.handleError = function(event) {
-  // We can't use common.naclModule yet because the module has not been
+  // We can't use this.module yet because the module has not been
   // loaded.
   var moduleEl = document.getElementById('decoder');
-  
-  console.log('ERROR [' + moduleEl.lastError + ']');
-  console.log(event);
+
+  return this.callback(new Error('ERROR [' + moduleEl.lastError + ']'));
 }
 
 /**
@@ -149,10 +138,10 @@ DJVUDecoder.prototype.handleError = function(event) {
  */
 DJVUDecoder.prototype.handleMessage = function(message_event) {
   if (typeof message_event.data === 'string') {
-    console.log('String message ' + message_event.data);
+    this.callback('String message ' + message_event.data);
   } else if (typeof message_event.data === 'object') {
     var message_data = message_event.data;
-    
+
     switch (message_data.message) {
       // Document downloading
       case (messages.PPB_DOWNLOAD_PROGRESS):
@@ -203,24 +192,10 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
         break;
       // Error handling
       case (messages.PPB_PLUGIN_ERROR):
-        console.log(message_data);
+        this.callback(new Error(message_data.args.message));
         break;
-      // Log handling
-      case (messages.PPB_PLUGIN_LOG):
-        //console.log(message_data.args);
-        //this.log.innerHTML = this.log.innerHTML + message_data.args;
-        break;
-      // Exception handling
-        this.crashed = true;
-        document.getElementById('json').value = message_data.args;
-        crash_info = JSON.parse(message_data.args);
-        //updateStatus('Crash Reported');
-        //src = common.naclModule.getAttribute('path');
-        //fetchMap(src + '/debugging_' + crash_info['arch'] + '.map', crash_info);
-        this.exception.innerHTML = crash_info;
       default:
-        console.log('Unhandled message');
-        console.log(message_data);
+        this.callback(new Error('Unhandled message'));
     }
   }
   if (typeof window.handleMessage !== 'undefined') {
@@ -235,10 +210,11 @@ DJVUDecoder.prototype.handleMessage = function(message_event) {
  */
 DJVUDecoder.prototype.handleCrash = function(event) {
   if (this.module.exitStatus == -1) {
-    console.log('CRASHED');
+    this.callback(new Error('CRASHED'));
   } else {
     // Reload module and restart all jobs.
-    console.log('EXITED [' + this.module.exitStatus + ']');
+    this.callback(new Error('EXITED [' + this.module.exitStatus + ']'));
+    // TODO (ilia) try to restart module on crash
     /*
     this.reloading = true;
     if (this.module !== undefined) {
@@ -253,7 +229,6 @@ DJVUDecoder.prototype.handleCrash = function(event) {
     */
   }
   if (typeof window.handleCrash !== 'undefined') {
-    console.log(event);
     window.handleCrash(this.module.lastError);
   }
 }
@@ -263,7 +238,6 @@ DJVUDecoder.prototype.handleCrash = function(event) {
  * named "listener".
  */
 DJVUDecoder.prototype.createNaClModule = function() {
-  console.log('create nacl module');
   var moduleEl = document.createElement('embed');
   moduleEl.setAttribute('id', 'decoder');
   moduleEl.setAttribute('width', 0);
@@ -296,15 +270,14 @@ DJVUDecoder.prototype.createNaClModule = function() {
       moduleEl.readyState = 4;
       moduleEl.dispatchEvent(new CustomEvent('load'));
       moduleEl.dispatchEvent(new CustomEvent('loadend'));
-      console.log('module created');
     }, 100);  // 100 ms
   }
 }
 
 /**
  * Request page as base64 string. Callback reterns decoded page.
- * If frame is not set then page is decoded in full size and sent back through 
- * callback function. In other case method returns part of the page 
+ * If frame is not set then page is decoded in full size and sent back through
+ * callback function. In other case method returns part of the page
  * that specified by frame.
  * @param {Object} settings Dictionary of page's settings
  *    Settings attributes:
@@ -380,7 +353,7 @@ DJVUDecoder.prototype.makeUniqueId = function() {
 
   for (var i = 0; i < 16; i++)
     res += possible.charAt(Math.floor(Math.random() * possible.length));
-    
+
   // Check if id is unique
   if (this.jobs[res] !== undefined)
     this.makeUniqueId();

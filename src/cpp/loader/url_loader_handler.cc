@@ -53,7 +53,7 @@ void URLLoaderHandler::Start() {
 
 void URLLoaderHandler::OnOpen(int32_t result) {
 	if (result != PP_OK) {
-		ReportResultAndDie(url_, "pp::URLLoader::Open() failed" + url_, false);
+		ReportResultAndDie(url_, "pp::URLLoader::Open() failed.", false);
 		return;
 	}
 	// Here you would process the headers. A real program would want to at least
@@ -61,21 +61,15 @@ void URLLoaderHandler::OnOpen(int32_t result) {
 	// pp::URLResponseInfo response = loader_.GetResponseInfo();
 	pp::URLResponseInfo response = url_loader_.GetResponseInfo();
 	if (response.is_null()) {
-		// @TODO (ilia) create appropriative error later
-		//pp::Var var_reply("Error: response is null");
-		//instance_->PostMessage(var_reply);
-
-		ReportResultAndDie(url_, "Error: response is null", false);
+		ReportResultAndDie(url_, "Error: response is null.", false);
 		return;
 	}
 	int32_t status = response.GetStatusCode();
-	// @TODO (ilia) create appropriative error later
-	std::string status_line = "Status: " + std::to_string(status) + " line: " + response.GetStatusLine().AsString();
+	std::string status_line = "Status: " + std::to_string(status) + " " + response.GetStatusLine().AsString();
 	if (status != 200) {
 		ReportResultAndDie(url_, status_line, false);
 		return;
 	}
-
 
 	// Try to figure out how many bytes of data are going to be downloaded in
 	// order to allocate memory for the response body in advance (this will
@@ -93,11 +87,7 @@ void URLLoaderHandler::OnOpen(int32_t result) {
 		total_bytes_to_be_received_ = total_bytes_to_be_received;
 		int new_download_progress = 100 * bytes_received / total_bytes_to_be_received;
 		if (new_download_progress > download_progress_) {
-			download_progress_ = new_download_progress;			
-			// @TODO (ilia) clean it later
-			//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
-			//pp::Var var_reply(download_progress_str);
-			//instance_->PostMessage(var_reply);
+			download_progress_ = new_download_progress;
 			PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 		}
 	}
@@ -125,10 +115,6 @@ void URLLoaderHandler::AppendDataBytes(const char* buffer, int32_t num_bytes) {
 	int new_download_progress = 100 * bytes_received_ / total_bytes_to_be_received_;
 	if (new_download_progress > download_progress_) {
 		download_progress_ = new_download_progress;
-		// @TODO (ilia) clean it later
-		//std::string download_progress_str = "browser:notify:download:" + std::to_string(download_progress_);
-		//pp::Var var_reply(download_progress_str);
-		//instance_->PostMessage(var_reply);
 		PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_PROGRESS, download_progress_));
 	}
 }
@@ -190,29 +176,11 @@ void URLLoaderHandler::ReportResultAndDie(const std::string& fname, const std::s
 }
 
 void URLLoaderHandler::ReportResult(const std::string& fname, const std::string& text, bool success) {
-	std::string out;
 	if (success) {
-		//printf("URLLoaderHandler::ReportResult(Ok).\n");
-		out = "URLLoaderHandler::ReportResult(Ok).\n";
-		out = "browser:notify:download:finished";
-
 		PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_DOWNLOAD_FINISHED, 0));
-		//OutputDebugStringA(out.c_str());
 	} else {
-		//printf("URLLoaderHandler::ReportResult(Err). %s\n", text.c_str());
-		out = "URLLoaderHandler::ReportResult(Err). %s\n" + text;
-		out = "browser:notify:download:error";
+		std::string error = "Could not download " + fname + ": " + text;
+		PostErrorMessage(safeInstance_, error);
+	}
 
-		PostErrorMessage(safeInstance_, text);
-		//PostMessageToInstance(instance_, CreateDictionaryReply("browser", "notify", "download", "error"));
-		//OutputDebugStringA(out.c_str());
-	}
-	/*
-	//fflush(stdout);
-	if (instance_) {
-		//pp::Var var_result(fname + "\n");
-		pp::Var var_result(out.c_str());
-		instance_->PostMessage(var_result);
-	}
-	*/
 }

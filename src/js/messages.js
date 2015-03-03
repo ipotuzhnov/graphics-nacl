@@ -46,8 +46,4 @@ var messages = {
   // Error
   // args: pp::VarDictionary
   PPB_PLUGIN_ERROR: "PPB_PLUGIN_ERROR",
-
-  // Log
-  // args = pp::Var.AsStirng()
-  PPB_PLUGIN_LOG: "PPB_PLUGIN_LOG",
 };

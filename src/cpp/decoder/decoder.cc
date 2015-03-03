@@ -111,7 +111,7 @@ void DjVuDecoder::decodeThreadFuntion_() {
 	if (!stream_)
 		return PostErrorMessage(safeInstance_, "Can't start document decoding. Stream does not exist.");
 
-	if (stream_->getError()) {
+	if (!stream_->getError().empty()) {
 		error_ = stream_->getError();
 		return PostErrorMessage(safeInstance_, "Can't start document decoding. Stream has error: " + error_);
 	}

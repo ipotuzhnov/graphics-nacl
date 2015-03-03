@@ -95,9 +95,6 @@ private:
 		decoder_->getPageText(page.Get("pageId").AsString(), page.Get("pageNum").AsInt());
 	}
 
-	void ExceptionHandlingThreadFunction_() {
-	}
-
 public:
 	explicit GraphicsInstance(PP_Instance instance)
 		: pp::Instance(instance),

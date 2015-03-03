@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef URL_LOADER_HANDLER_H_
-#define URL_LOADER_HANDLER_H_
+#ifndef __URL_LOADER_HANDLER_H__
+#define __URL_LOADER_HANDLER_H__
 
 #include <memory>
 
@@ -96,4 +96,4 @@ private:
 	void operator=(const URLLoaderHandler&);
 };
 
-#endif  // URL_LOADER_HANDLER_H_
+#endif // __URL_LOADER_HANDLER_H__

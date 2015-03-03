@@ -44,12 +44,6 @@ namespace {
 		PostMessageToInstance(safeInstance, error_message);
 	}
 
-	/* Post log message to the browser */
-	void PostLogMessage(std::shared_ptr<SafeInstance> safeInstance, std::string message) {
-		pp::VarDictionary error_message(CreateDictionaryReply(PPB_PLUGIN_LOG, message));
-		PostMessageToInstance(safeInstance, error_message);
-	}
-
 	/* Post bitmap as base64 to the browser */
 	void PostBitmapMessageAsBase64(std::shared_ptr<SafeInstance> safeInstance, std::string pageId, pp::VarDictionary bitmapAsDict) {
 		pp::VarDictionary var_bitmap;

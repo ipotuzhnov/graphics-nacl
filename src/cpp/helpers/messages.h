@@ -26,7 +26,7 @@ namespace {
 	// Notify browser that decode is finished
 	// args = pp::VarArray <pp::VarDictionary<width, height, dpi>>
 	const char* const PPB_DECODE_FINISHED = "PPB_DECODE_FINISHED";
-	
+
 	// Tell plugin to decode page
 	// args = pp::VarDictionary <pp::VarDictionary<pageId, pageNum, width, height>>
 	const char* const PPD_DECODE_PAGE = "PPD_DECODE_PAGE";
@@ -55,10 +55,6 @@ namespace {
 	// Error
 	// args = pp::VarDictionary
 	const char* const PPB_PLUGIN_ERROR = "PPB_PLUGIN_ERROR";
-
-	// Log
-	// args = pp::Var.AsStirng()
-	const char* const PPB_PLUGIN_LOG = "PPB_PLUGIN_LOG";
 
 } // namespace
 
