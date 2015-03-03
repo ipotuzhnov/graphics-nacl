@@ -15,11 +15,11 @@ function updateStatus(opt_message) {
 document.addEventListener('DOMContentLoaded', function() {
   // example
   var type = 'pnacl';
-  var url = 'http://172.16.2.114:88/graphics_nacl/1.djvu';
-  var nmf = '/graphics-nacl-git/graphics-nacl-decoder-debug.nmf';
+  var url = 'http://127.0.0.1:88/graphics_nacl/1.djvu';
+  var nmf = '../graphics-nacl-decoder-debug.nmf';
   var settings = { type: type, url: url, nmf: nmf, debug: true };
   decoder = new DJVUDecoder(
-    settings, 
+    settings,
     function(progress) {
       // Update progress
       updateStatus('DOWNLOADING:' + progress + '%');
@@ -30,23 +30,22 @@ document.addEventListener('DOMContentLoaded', function() {
       if (pages === undefined) throw 'Pages array in undefiend';
       console.log('Document is decoded');
       console.log('and has ' + pages.length + ' pages');
-      
+
       // Test get page text
       //testGetPageText();
-      
+
       // Test page decoding
       //testGetPage(pages);
-      
-      // Anync page decoding. 
+
+      // Anync page decoding.
       // 5 pages by itteration.
-      tests.testAsyncGetPage(decoder, pages, 1);
+      tests.testAsyncGetPage(decoder, pages, 5);
       //tests.testAsyncGetPage(decoder, pages, 3);
       //tests.testAsyncGetPage(decoder, pages, 4);
       //tests.testAsyncGetPage(decoder, pages, 5);
-      // Anync page decoding. 
+      // Anync page decoding.
       // tests.testAsyncGetPage(decoder, pages, 7, 15);
       //tests.testAsyncGetPage(decoder, pages, 5, 15);
     }
   );
 });
-

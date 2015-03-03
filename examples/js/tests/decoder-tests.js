@@ -41,7 +41,7 @@ var tests = function(decoder) {
       imageEl.setAttribute('height', page.height);
       // Add image to the body
       document.body.appendChild(imageEl);
-      
+
     });
   }
 
@@ -54,10 +54,10 @@ var tests = function(decoder) {
     this.decoded = 0;
     this.pendingPages = {};
   }
-  
+
    AsyncDecoder.prototype.getPage = function(pageNumber, callback) {
     // Create settings for the page
-    var size = { width: 100, height: 100 };
+    var size = { width: 1000, height: 2000 };
     var page_settings = { pageNumber: pageNumber, size: size };
     var pname = 'p' + pageNumber;
     this.pendingPages[pname] = 'waiting';
@@ -73,11 +73,6 @@ var tests = function(decoder) {
       // Add image to the body
       document.body.appendChild(imageEl);
       delete this.pendingPages[pname];
-      if (pageNumber == (this.numberOfPagesToDecode - 1)) {
-        tests.stopTime = new Date();
-        var elapsed = tests.stopTime - tests.startTime;
-        console.log('decoded the last page ' + document.getElementsByTagName('*').length + ' in ' + elapsed / 1000 + ' seconds');
-      }
       callback(pageNumber);
     }.bind(this));
   }
@@ -88,15 +83,34 @@ var tests = function(decoder) {
       var offset = this.decoded;
       for (var i = 0; i < this.numberOfThreads; i++) {
         var pageNumber = offset + i;
-        if (pageNumber > this.numberOfPagesToDecode - 1) { 
-          console.log('stop decoding' + this.id);
+        if (pageNumber > this.numberOfPagesToDecode - 1) {
           if (tests.asyncDecoders[this.id] === undefined) return;
           delete tests.asyncDecoders[this.id];
+          tests.stopTime = new Date();
+          var elapsed = tests.stopTime - tests.startTime;
+          console.log('decoded the last page ' + document.getElementsByTagName('*').length + ' in ' + elapsed / 1000 + ' seconds');
+
+          var numberOfDecoders = Object.size(tests.asyncDecoders);
+          console.log('Number of decoders left: ' + numberOfDecoders);
+
+          // Log when decoded the last page
+          var msg1 =
+            'Decoder ' + this.id + ' finished decoding in ' +
+            this.numberOfThreads + ' threads.';
+          console.log(msg1);
+          var msg2 =
+            'Decoded ' + (this.decoded + 1) +
+            ' of ' + this.numberOfPagesToDecode +
+            ' (' + Object.size(this.pages) + ').' +
+            ' Number of pending pages: ' + Object.size(this.pendingPages);
+          console.log(msg2)
+
           return;
         }
+
         console.log(this.id +' start ' + pageNumber)
         this.getPage(pageNumber, function(decodedPageNumber) {
-          console.log(this.id + ' decoded page ' + decodedPageNumber);
+          console.log(this.id + ' decoded page ' + (decodedPageNumber + 1));
           this.decoded++;
           if (this.decoded % this.numberOfThreads === 0) this.getNextPages();
         }.bind(this));
@@ -122,7 +136,7 @@ var tests = function(decoder) {
     tests.asyncDecoders[id] = { asyncDecoder: asyncDecoder };
     asyncDecoder.getPagesAsync();
   }
-  
+
   /**
    * Generates unique id.
    */
@@ -132,13 +146,13 @@ var tests = function(decoder) {
 
     for (var i = 0; i < 16; i++)
       res += possible.charAt(Math.floor(Math.random() * possible.length));
-      
+
     // Check if id is unique
     //if (this.tmp[res] !== undefined)
     //  this.makeUniqueId();
     return res;
-  }  
-  
+  }
+
   return {
     testGetPageText: testGetPageText,
     testGetPage: testGetPage,
@@ -147,3 +161,15 @@ var tests = function(decoder) {
     asyncDecoders: asyncDecoders
   }
 }();
+
+/** Extension for JS objects.
+  * Reterns object size.
+  * @param {Object} The object which size required to count.
+  */
+Object.size = function(obj) {
+  var size = 0, key;
+  for (key in obj) {
+    if (obj.hasOwnProperty(key)) size++;
+  }
+  return size;
+};
