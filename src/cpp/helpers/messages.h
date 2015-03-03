@@ -12,7 +12,6 @@ namespace {
 	// ppb - Pepper Browser
 	// ppp - Pepper Plugin
 	// ppd - Graphics NaCl Decoder
-	// ppr - Graphics NaCl Renderer
 
 	// Download document
 	const char* const PPD_DOWNLOAD_START = "PPD_DOWNLOAD_START";
@@ -27,19 +26,13 @@ namespace {
 	// Notify browser that decode is finished
 	// args = pp::VarArray <pp::VarDictionary<width, height, dpi>>
 	const char* const PPB_DECODE_FINISHED = "PPB_DECODE_FINISHED";
+	
 	// Tell plugin to decode page
 	// args = pp::VarDictionary <pp::VarDictionary<pageId, pageNum, width, height>>
 	const char* const PPD_DECODE_PAGE = "PPD_DECODE_PAGE";
-
 	// Page is decoded
 	// args = pageId
 	const char* const PPB_PAGE_READY = "PPB_PAGE_READY";
-	// Request page
-	// args = pp::VarDictionary
-	const char* const PPD_GET_PAGE = "PPD_GET_PAGE";
-	// Receiving page from JS
-	// args = pp::VarDictionary
-	const char* const PPR_SEND_PAGE = "PPR_SEND_PAGE";
 
 	// Request page as base64
 	// args = pp::Var.AsString() <pageId>
@@ -59,12 +52,6 @@ namespace {
 	// args = pp::Var.AsString() <pageId>
 	const char* const PPD_RELEASE_PAGE = "PPD_RELEASE_PAGE";
 
-	// Renderer received page
-	// args = pp::Var.AsString() <pageId>
-	const char* const PPB_PAGE_RECEIVED = "PPB_PAGE_RECEIVED";
-	// Render page
-	const char* const PPR_PAGE_RENDER = "PPR_PAGE_RENDER";
-
 	// Error
 	// args = pp::VarDictionary
 	const char* const PPB_PLUGIN_ERROR = "PPB_PLUGIN_ERROR";
@@ -72,10 +59,6 @@ namespace {
 	// Log
 	// args = pp::Var.AsStirng()
 	const char* const PPB_PLUGIN_LOG = "PPB_PLUGIN_LOG";
-
-	// Stack trace
-	// args = pp::Var.AsStirng() a JSON string defining an exception.
-	const char* const PPB_PLUGIN_TRC = "PPB_PLUGIN_TRC";
 
 } // namespace
 
