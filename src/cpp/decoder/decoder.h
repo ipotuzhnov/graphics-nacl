@@ -25,12 +25,10 @@ public:
 	void sendPageAsBase64(std::string pageId);
 	void releasePage(std::string pageId);
 	void getPageText(std::string pageId, int pageNum);
-	std::shared_ptr<decoder::Bitmap> getPageBmp(std::string pageId);
 private:
 	void decodeThreadFuntion_();
 	void decodePageThreadFunction_(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
 	void sendPageThreadFunction_(std::string pageId);
-	//void updateThreadFuntion_();
 
 	std::shared_ptr<SafeInstance> safeInstance_; // Shared pointer
 
@@ -43,7 +41,6 @@ private:
 	std::string error_;
 
 	std::thread decodeThread_;
-	//std::thread updateThread_;
 };
 
 #endif // DJVU_DECODER_H_

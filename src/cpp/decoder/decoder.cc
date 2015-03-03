@@ -47,8 +47,6 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size,
 	if (!page)
 		return PostErrorMessage(safeInstance_, "Can't create page with id " + pageId + ". Can't find page.");
 
-	page->pageId = pageId;
-	page->pageNum = pageNum;
 	page->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
 }
 
@@ -109,14 +107,6 @@ void DjVuDecoder::getPageText(std::string pageId, int pageNum) {
 	PostPageTextMessage(safeInstance_, pageId, var_page_text);
 }
 
-std::shared_ptr<decoder::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
-	if (pages_.find(pageId) != pages_.end()) {
-		return pages_[pageId]->bitmap;
-	} else {
-		return nullptr;
-	}
-}
-
 void DjVuDecoder::decodeThreadFuntion_() {
 	if (!stream_)
 		return PostErrorMessage(safeInstance_, "Can't start document decoding. Stream does not exist.");
@@ -160,8 +150,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	// Check if size is valid
 	if (!size_var.is_dictionary()) {
 		error = pageId + "Error: size is not a dictionary";
-		PostErrorMessage(safeInstance_, error);
-		return;
+		return PostErrorMessage(safeInstance_, error);
 	}
 	pp::VarDictionary size(size_var);
 	std::shared_ptr<DjVuSize> valid_size = std::make_shared<DjVuSize>();
@@ -171,8 +160,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		error += " Error: size.height is not an integer value.";
 	if (!error.empty()) {
 		error = pageId + error;
-		PostErrorMessage(safeInstance_, error);
-		return;
+		return PostErrorMessage(safeInstance_, error);
 	}
 	valid_size->width = size.Get("width").AsInt();
 	valid_size->height = size.Get("height").AsInt();
@@ -187,8 +175,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	} else {
 		if (!frame_var.is_dictionary()) {
 			error = pageId + " Error: frame is not a dictionary";
-			PostErrorMessage(safeInstance_, error);
-			return;
+			return PostErrorMessage(safeInstance_, error);
 		}
 		pp::VarDictionary frame(frame_var);
 		// Check if frame is valid
@@ -207,8 +194,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		bottom = frame.Get("bottom").AsInt();
 		if (!error.empty()) {
 			error = pageId + error;
-			PostErrorMessage(safeInstance_, error);
-			return;
+			return PostErrorMessage(safeInstance_, error);
 		}
 		width = right - left;
 		height = bottom - top;
@@ -222,8 +208,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 			error += " Error: frame height is greater than size.height.";
 		if (!error.empty()) {
 			error = pageId + error;
-			PostErrorMessage(safeInstance_, error);
-			return;
+			return PostErrorMessage(safeInstance_, error);
 		}
 		valid_frame->left = left;
 		valid_frame->top = top;
@@ -239,9 +224,8 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 	page->frame = valid_frame;
 
 	auto document = document_;
-	if (!document) {
+	if (!document)
 		return PostErrorMessage(safeInstance_, "Can't decode page with id " + pageId + ". Document does not exist.");
-	}
 
 	auto dpage = document->getPage(pageId, pageNum, valid_size->width, valid_size->height);
 	dpage->start();
@@ -250,16 +234,14 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		return PostErrorMessage(safeInstance_, "Can't decode page with id " + pageId + ". Page was aborted.");
 
 	auto bitmap = dpage->getBitmap();
-	// TODO (ilia) page wasn't decoded. May be we should try again or whatever.
+
 	if (!bitmap) {
-		// TODO (ilia) now we will send fake image. Only for testing.
-		page->bitmapStr = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABDklEQVR4nO3TQQrCABAEwTHJ/7+sD1DEOkmg65CDSpCh97E9j+3c3p8fP/zylf7+dq+6diw/unb++y/cR2WBygKVBSoLVBaoLNBYoDMElQUqC1QWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoCjQU6Q1BZoLJAZYHKApUFKgtUFmgs0BmCygKVBSoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoClQUqCzQW6AxBZYHKApUFKgtUFqgsUFmgsUBnCCoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBygKVBRoLdIagskBlgcoClQUqC1QWqCzQWKAzBJUFKgtUFqgsUFngBaRCBIfbWmyRAAAAAElFTkSuQmCC";
+		return PostErrorMessage(safeInstance_, "Can't decode page with id " + pageId + ". Bitmap does not exist");
 	} else {
 		page->bitmap = bitmap->getBmp();
 	}
 
 	PostMessageToInstance(safeInstance_, CreateDictionaryReply(PPB_PAGE_READY, pageId));
-	page->isDecoding = true;
 }
 
 void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
@@ -278,14 +260,6 @@ void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
 			return PostBitmapMessageAsBase64(safeInstance_, pageId, bmp);
 		}
 	} else {
-		pp::VarDictionary bmp;
-		bmp.Set("bitsPixel", 3);
-		bmp.Set("colors", 0);
-		bmp.Set("width", 100);
-		bmp.Set("height", 100);
-		bmp.Set("rowSize", 300);
-		bmp.Set("imageData", pages_[pageId]->bitmapStr);
-		PostBitmapMessageAsBase64(safeInstance_, pageId,bmp);
+		return PostErrorMessage(safeInstance_, "Can't decode page with id " + pageId + ". Bitmap does not exist");
 	}
-	pages_[pageId]->isSending = true;
 }

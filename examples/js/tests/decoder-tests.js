@@ -57,7 +57,7 @@ var tests = function(decoder) {
 
    AsyncDecoder.prototype.getPage = function(pageNumber, callback) {
     // Create settings for the page
-    var size = { width: 1000, height: 2000 };
+    var size = { width: 100, height: 100 };
     var page_settings = { pageNumber: pageNumber, size: size };
     var pname = 'p' + pageNumber;
     this.pendingPages[pname] = 'waiting';
