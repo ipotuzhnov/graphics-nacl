@@ -1,12 +1,12 @@
-#ifndef GRAPHICS_NACL_MESSAGES_H_
-#define GRAPHICS_NACL_MESSAGES_H_
+#ifndef __GRAPHICS_NACL_MESSAGES_H__
+#define __GRAPHICS_NACL_MESSAGES_H__
 
 namespace {
-	
+
 	// @TODO (ilia)
 	// Message format <target>:<message_type>:<command>:<args>
 	// Instead of string messages we'll use Arrays or Dictionaries
-	// So new message format is Dictionary { message: pp::Var.AsString(), args: <string, array or dictionary> } 
+	// So new message format is Dictionary { message: pp::Var.AsString(), args: <string, array or dictionary> }
 
 	// Messages
 	// ppb - Pepper Browser
@@ -79,4 +79,4 @@ namespace {
 
 } // namespace
 
-#endif //GRAPHICS_NACL_MESSAGES_H_
+#endif // __GRAPHICS_NACL_MESSAGES_H__

@@ -2,6 +2,7 @@
 
 #include <locale>
 #include <codecvt>
+#include <tuple>
 
 #include "../helpers/messages.h"
 #include "../helpers/message_helper.h"
@@ -29,7 +30,7 @@ DjVuDecoder::~DjVuDecoder() {
 void DjVuDecoder::startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance, std::shared_ptr<UrlDownloadStream> stream) {
 	stream_ = stream;
 	safeInstance_ = safeInstance;
-	delegateBmpFactory_ = std::make_shared<BmpFactoryDelegate>(safeInstance_);
+	delegateBmpFactory_ = std::make_shared<BmpFactoryDelegate>();
 
 	decodeThread_ = std::thread(&DjVuDecoder::decodeThreadFuntion_, this);
 }
@@ -49,17 +50,6 @@ void DjVuDecoder::startPageDecode(std::string pageId, int pageNum, pp::Var size,
 	page->pageId = pageId;
 	page->pageNum = pageNum;
 	page->decoding_thread = std::thread(&DjVuDecoder::decodePageThreadFunction_, this, pageId, pageNum, size, frame);
-}
-
-void DjVuDecoder::sendPage(std::string pageId) {
-	if (pages_.find(pageId) == pages_.end())
-		return PostErrorMessage(safeInstance_, "Can't send page with id " + pageId + ". Page does not exist.");
-
-	auto page = pages_[pageId];
-	if (!page)
-		return PostErrorMessage(safeInstance_, "Can't send page with id " + pageId + ". Can't find page.");
-
-	PostBitmapMessage(safeInstance_, pageId, page->bitmap->getAsDictionary());
 }
 
 void DjVuDecoder::sendPageAsBase64(std::string pageId) {
@@ -119,7 +109,7 @@ void DjVuDecoder::getPageText(std::string pageId, int pageNum) {
 	PostPageTextMessage(safeInstance_, pageId, var_page_text);
 }
 
-std::shared_ptr<renderer::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
+std::shared_ptr<decoder::Bitmap> DjVuDecoder::getPageBmp(std::string pageId) {
 	if (pages_.find(pageId) != pages_.end()) {
 		return pages_[pageId]->bitmap;
 	} else {
@@ -136,7 +126,7 @@ void DjVuDecoder::decodeThreadFuntion_() {
 		return PostErrorMessage(safeInstance_, "Can't start document decoding. Stream has error: " + error_);
 	}
 
-	document_ = std::shared_ptr<ddjvu::File<renderer::Bitmap>>(new ddjvu::File<renderer::Bitmap>(stream_->getPool(), delegateBmpFactory_));
+	document_ = std::shared_ptr<ddjvu::File<decoder::Bitmap>>(new ddjvu::File<decoder::Bitmap>(stream_->getPool(), delegateBmpFactory_));
 	auto document = document_;
 	if (!document)
 		return PostErrorMessage(safeInstance_, "Can't start document decoding. Can't create document.");
@@ -260,7 +250,7 @@ void DjVuDecoder::decodePageThreadFunction_(std::string pageId, int pageNum,  pp
 		return PostErrorMessage(safeInstance_, "Can't decode page with id " + pageId + ". Page was aborted.");
 
 	auto bitmap = dpage->getBitmap();
-	// TODO (ilia) page wasn't decoded. May be we should try again or whatever
+	// TODO (ilia) page wasn't decoded. May be we should try again or whatever.
 	if (!bitmap) {
 		// TODO (ilia) now we will send fake image. Only for testing.
 		page->bitmapStr = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAABDklEQVR4nO3TQQrCABAEwTHJ/7+sD1DEOkmg65CDSpCh97E9j+3c3p8fP/zylf7+dq+6diw/unb++y/cR2WBygKVBSoLVBaoLNBYoDMElQUqC1QWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoCjQU6Q1BZoLJAZYHKApUFKgtUFmgs0BmCygKVBSoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBxgKdIagsUFmgskBlgcoClQUqCzQW6AxBZYHKApUFKgtUFqgsUFmgsUBnCCoLVBaoLFBZoLJAY4HOEFQWqCxQWaCyQGWBygKVBRoLdIagskBlgcoClQUqC1QWqCzQWKAzBJUFKgtUFqgsUFngBaRCBIfbWmyRAAAAAElFTkSuQmCC";
@@ -278,7 +268,15 @@ void DjVuDecoder::sendPageThreadFunction_(std::string pageId) {
 
 	auto bitmap = pages_[pageId]->bitmap;
 	if (bitmap) {
-		PostBitmapMessageAsBase64(safeInstance_, pageId, bitmap->getAsBase64Dictionary(pages_[pageId]->frame));
+		std::string error;
+		pp::VarDictionary bmp;
+		auto error_bmp = bitmap->getAsBase64Dictionary(pages_[pageId]->frame);
+		std::tie (error, bmp) = bitmap->getAsBase64Dictionary(pages_[pageId]->frame);
+		if (!error.empty()) {
+			return PostErrorMessage(safeInstance_, "Can't send page with id " + pageId + ". " + error);
+		} else {
+			return PostBitmapMessageAsBase64(safeInstance_, pageId, bmp);
+		}
 	} else {
 		pp::VarDictionary bmp;
 		bmp.Set("bitsPixel", 3);

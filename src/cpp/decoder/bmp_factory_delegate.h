@@ -4,15 +4,11 @@
 #include "ddjvu/IBmpFactory.h"
 #include "bmp_delegate.h"
 
-class BmpFactoryDelegate: public ddjvu::IBmpFactory<renderer::Bitmap> {
-private:
-	std::shared_ptr<SafeInstance> safeInstance_;  // Weak pointer.
+class BmpFactoryDelegate: public ddjvu::IBmpFactory<decoder::Bitmap> {
 public:
-	BmpFactoryDelegate(std::shared_ptr<SafeInstance> safeInstance) {
-		safeInstance_ = safeInstance;
-	}
+	BmpFactoryDelegate() {}
 
-	std::shared_ptr<ddjvu::IBmp<renderer::Bitmap>> createBmp(int bitsPixel, int colors, int width, int height, int rowSize, char * imageBuffer) {
+	std::shared_ptr<ddjvu::IBmp<decoder::Bitmap>> createBmp(int bitsPixel, int colors, int width, int height, int rowSize, char * imageBuffer) {
 		return std::shared_ptr<BmpDelegate>(new BmpDelegate(bitsPixel, colors, width, height, rowSize, imageBuffer));
 	}
 };

@@ -83,10 +83,6 @@ private:
 		decoder_->startPageDecode(page.Get("pageId").AsString(), page.Get("pageNum").AsInt(), page.Get("size"), page.Get("frame"));
 	}
 
-	void SendPage(std::string pageId) {
-		decoder_->sendPage(pageId);
-	}
-
 	void SendPageAsBase64(std::string pageId) {
 		decoder_->sendPageAsBase64(pageId);
 	}
@@ -143,11 +139,6 @@ public:
 				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a dictionary");
 
 			DecodePage(pp::VarDictionary(message_args));
-		} else if (message == PPD_GET_PAGE) {
-			if ( !message_args.is_string() )
-				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");
-
-			SendPage(message_args.AsString());
 		} else if (message == PPD_GET_PAGE_AS_BASE64) {
 			if ( !message_args.is_string() )
 				return PostErrorMessage(safeInstance_, "Args for message " + message + " should be a string");

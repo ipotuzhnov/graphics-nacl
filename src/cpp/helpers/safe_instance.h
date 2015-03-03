@@ -9,10 +9,10 @@ class SafeInstance {
 public:
 	pp::Instance *instance; // Weak pointer.
 	std::atomic<bool> isValid;
-	SafeInstance(pp::Instance *instance) : instance(instance) { 
+	SafeInstance(pp::Instance *instance) : instance(instance) {
 		if (instance != nullptr)
 			isValid = true;
-		else 
+		else
 			isValid = false;
 	}
 };

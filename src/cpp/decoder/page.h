@@ -9,7 +9,7 @@
 class DjVuPage {
 public:
 	std::string bitmapStr;
-	std::shared_ptr<renderer::Bitmap> bitmap;
+	std::shared_ptr<decoder::Bitmap> bitmap;
 	bool isSending;
 
 	std::thread decoding_thread;
@@ -37,7 +37,7 @@ public:
 			*/
 	}
 		/*
-	BITMAP: renderer::Bitmap
+	BITMAP: decoder::Bitmap
 +++isSending: bool
 
 +THREAD: std::thread

@@ -22,11 +22,10 @@ public:
 
 	void startDocumentDecode(std::shared_ptr<SafeInstance> safeInstance, std::shared_ptr<UrlDownloadStream> stream);
 	void startPageDecode(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
-	void sendPage(std::string pageId);
 	void sendPageAsBase64(std::string pageId);
 	void releasePage(std::string pageId);
 	void getPageText(std::string pageId, int pageNum);
-	std::shared_ptr<renderer::Bitmap> getPageBmp(std::string pageId);
+	std::shared_ptr<decoder::Bitmap> getPageBmp(std::string pageId);
 private:
 	void decodeThreadFuntion_();
 	void decodePageThreadFunction_(std::string pageId, int pageNum,  pp::Var size, pp::Var frame);
@@ -36,7 +35,7 @@ private:
 	std::shared_ptr<SafeInstance> safeInstance_; // Shared pointer
 
 	std::shared_ptr<UrlDownloadStream> stream_;
-	std::shared_ptr<ddjvu::File<renderer::Bitmap>> document_;
+	std::shared_ptr<ddjvu::File<decoder::Bitmap>> document_;
 	std::shared_ptr<BmpFactoryDelegate> delegateBmpFactory_;
 	int numberOfPages_;
 

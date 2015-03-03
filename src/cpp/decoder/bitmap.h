@@ -5,13 +5,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <tuple>
 
 #include <png.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <stdint.h>
 
-//#include "bitmap.h"
 #include "../helpers/virtual_file.h"
 #include "../base64/base64.h"
 
@@ -37,7 +34,7 @@ namespace {
 
 }
 
-namespace renderer {
+namespace decoder {
 
 	class Bitmap {
 	private:
@@ -47,16 +44,7 @@ namespace renderer {
 		int height_;
 		int rowSize_;
 		char* imageBuffer_;
-
-		uint32_t MakeColor(uint8_t a, uint8_t r, uint8_t g, uint8_t b) {
-			PP_ImageDataFormat format = pp::ImageData::GetNativeImageDataFormat();
-			if (format == PP_IMAGEDATAFORMAT_BGRA_PREMUL) {
-				return (a << 24) | (r << 16) | (g << 8) | b;
-			} else {
-				return (a << 24) | (b << 16) | (g << 8) | r;
-			}
-		}
-	public: 
+	public:
 		Bitmap(int bitsPixel, int colors, int width, int height, int rowSize, char* imageBuffer) {
 			bitsPixel_ = bitsPixel;
 			colors_ = colors;
@@ -68,70 +56,17 @@ namespace renderer {
 			memcpy(imageBuffer_, imageBuffer, rowSize * height);
 		}
 
-		Bitmap(pp::VarDictionary bmp) {
-			bitsPixel_ = bmp.Get("bitsPixel").AsInt();
-			colors_ = bmp.Get("colors").AsInt();
-			width_ = bmp.Get("width").AsInt();
-			height_ = bmp.Get("height").AsInt();
-			rowSize_ = bmp.Get("rowSize").AsInt();
-
-			pp::VarArrayBuffer pageImageData(bmp.Get("imageData"));
-			char *buffer = static_cast<char*>(pageImageData.Map());
-			int size = pageImageData.ByteLength();
-			imageBuffer_ = new char[size];
-			memcpy(imageBuffer_, buffer, size);		
-			pageImageData.Unmap();
-		}
-
 		~Bitmap() {
 			delete [] imageBuffer_;
 		}
 
-		char *getImageBuffer() {
-			return imageBuffer_;
-		}
-
-		int getImageBufferSize() {
-			return rowSize_ * height_;
-		}
-
-		pp::VarDictionary getAsDictionary() {
-			pp::VarDictionary bmp;
-			bmp.Set("bitsPixel", bitsPixel_);
-			bmp.Set("colors", colors_);
-			bmp.Set("width", width_);
-			bmp.Set("height", height_);
-			bmp.Set("rowSize", rowSize_);
-
-			int size = rowSize_ * height_;
-			pp::VarArrayBuffer pageImageData(size);
-			char *buffer = static_cast<char*>(pageImageData.Map());
-			memcpy(buffer, imageBuffer_, size);
-			bmp.Set("imageData", pageImageData);
-			pageImageData.Unmap();
-
-			return bmp;
-		}
-
-		pp::ImageData getAsImageData(pp::Instance *instance) {
-			PP_ImageDataFormat format = pp::ImageData::GetNativeImageDataFormat();
-			const bool kInitToZero = true;
-			pp::Size size(width_, height_);
-			pp::ImageData image(instance, format, size, kInitToZero);
-
-			for (int y = 0;  y < height_; y++) {
-				for (int x = 0; x < width_; x++) {
-					if (bitsPixel_ == 1) {
-						*image.GetAddr32(pp::Point(x, y)) = MakeColor(255, imageBuffer_[y * rowSize_ + x] , imageBuffer_[y * rowSize_ + x], imageBuffer_[y * rowSize_ + x]);
-					} else {
-						*image.GetAddr32(pp::Point(x, y)) = MakeColor(255, imageBuffer_[y * rowSize_ + x * 3 + 2], imageBuffer_[y * rowSize_ + x * 3 + 1], imageBuffer_[y * rowSize_ + x * 3]);
-					}
-				}
-			}
-			return image;
-		}
-
-		std::string getAsBase64Encoded(std::shared_ptr<DjVuFrame> frame) {
+		/* Creates a base64 encoded PNG of bitmap in bounds of given frame.
+		 *  @param {DjVuFrame} frame The frame representing bound of required bitmap.
+		 * Returns a {std::tuple} that contains {std::string} error and
+		 *   {std::string} base64 representation of created PNG.
+		 */
+		std::tuple<std::string, std::string> getAsBase64Encoded(std::shared_ptr<DjVuFrame> frame) {
+			std::string error;
 			std::string base64encoded;
 
 			/* Virtual file */
@@ -149,23 +84,23 @@ namespace renderer {
 
 			png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 			if (png_ptr == NULL) {
-				// TODO (ilia) send error to JS
-				return base64encoded;
+				error = "Could not create base64 encoded bitmap. Could not create png_write_struct.";
+				return  std::make_tuple(error, base64encoded);
 			}
 
 			info_ptr = png_create_info_struct (png_ptr);
 			if (info_ptr == NULL) {
-				// TODO (ilia) send error to JS
 				png_destroy_write_struct (&png_ptr, &info_ptr);
-				return base64encoded;
+				error = "Could not create base64 encoded bitmap. Could not create png_info_struct.";
+				return  std::make_tuple(error, base64encoded);
 			}
 
 			/* Set up error handling. */
 
 			if (setjmp (png_jmpbuf (png_ptr))) {
-				// TODO (ilia) send error to JS
 				png_destroy_write_struct (&png_ptr, &info_ptr);
-				return base64encoded;
+				error = "Could not create base64 encoded bitmap. Could not set up libpng error handling.";
+				return  std::make_tuple(error, base64encoded);
 			}
 
 			/* Calculate image attributes. */
@@ -221,16 +156,16 @@ namespace renderer {
 				png_free (png_ptr, row_pointers[y]);
 			}
 			png_free (png_ptr, row_pointers);
-			
+
 			if(virtual_file.buffer)
 				free(virtual_file.buffer);
 
 			png_destroy_write_struct (&png_ptr, &info_ptr);
 
-			return base64encoded;
+			return std::make_tuple(error, base64encoded);
 		}
 
-		pp::VarDictionary getAsBase64Dictionary(std::shared_ptr<DjVuFrame> frame) {
+		std::tuple<std::string, pp::VarDictionary> getAsBase64Dictionary(std::shared_ptr<DjVuFrame> frame) {
 			int width = frame->right - frame->left;
 			int height = frame->bottom - frame->top;
 			pp::VarDictionary bmp;
@@ -239,8 +174,15 @@ namespace renderer {
 			bmp.Set("width", width);
 			bmp.Set("height", height);
 			bmp.Set("rowSize", rowSize_);
-			bmp.Set("imageData", getAsBase64Encoded(frame));
-			return bmp;
+			std::string error;
+			std::string png;
+			std::tie (error, png) = getAsBase64Encoded(frame);
+			if (png.empty()) {
+				error = "Generated png is empty.";
+				return std::make_tuple(error, bmp);
+			}
+			bmp.Set("imageData", png);
+			return std::make_tuple(error, bmp);
 		}
 
 	};
