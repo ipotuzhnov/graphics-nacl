@@ -13,7 +13,7 @@ LIBS=-l ppapi_cpp -l ppapi -l pthread -l djvulibre -l png -l z
 CXXCPPOLD=-D THREADMODEL=POSIXTHREADS -D HAVE_STDINT_H -D UPDATE_EXPORTS -D HAVE_NAMESPACES -D AUTOCONF -D HAVE_STDINCLUDES
 CXXCPP=-D HAVE_CONFIG_H -D THREADMODEL=POSIXTHREADS -D NDEBUG
 
-DECODER_SOURCES=src/decoder/module.cc src/loader/url_download_stream.cc src/loader/url_loader_handler.cc src/decoder/decoder.cc src/base64/base64.cc
+DECODER_SOURCES=src/cpp/decoder/module.cc src/cpp/loader/url_download_stream.cc src/cpp/loader/url_loader_handler.cc src/cpp/decoder/decoder.cc src/cpp/base64/base64.cc
 
 all: decoder-compress
 
@@ -36,5 +36,4 @@ graphics-nacl-debug:
 	$(CXX) $(DECODER_SOURCES) $(CXXCPP) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -g -o graphics-nacl-decoder-debug.pexe
 
 clean:
-	rm -rf graphics-nacl-decoder.pexe graphics-nacl-decoder.final.pexe graphics-nacl-renderer.pexe graphics-nacl-renderer.final.pexe graphics-nacl-decoder-debug.pexe graphics-nacl-decoder-debug_x86_32.nexe graphics-nacl-decoder-debug_x86_64.nexe graphics-nacl-decoder-debug.bc
-
+	rm -rf graphics-nacl-decoder.pexe graphics-nacl-decoder.final.pexe graphics-nacl-decoder-debug.pexe graphics-nacl-decoder-debug_x86_32.nexe graphics-nacl-decoder-debug_x86_64.nexe graphics-nacl-decoder-debug.bc

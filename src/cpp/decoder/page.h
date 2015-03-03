@@ -4,7 +4,7 @@
 #include <memory>
 #include <thread>
 
-#include "../renderer/bitmap.h"
+#include "bitmap.h"
 
 class DjVuPage {
 public:
@@ -23,7 +23,7 @@ public:
 	int pageNum;
 	std::string pageId;
 
-	DjVuPage() : 
+	DjVuPage() :
 		isSending(false),
 		isDecoding(false)
 	{}

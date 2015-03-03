@@ -9,8 +9,8 @@
 #include "ddjvu/File.h"
 
 #include "../helpers/safe_instance.h"
-#include "../renderer/bitmap.h"
 #include "../loader/url_download_stream.h"
+#include "bitmap.h"
 #include "page.h"
 
 #include "bmp_factory_delegate.h"
